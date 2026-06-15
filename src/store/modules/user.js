@@ -110,11 +110,11 @@ const actions = {
                   steps: [
                     {
                       title: '欢迎✨',
-                      intro: '欢迎使用WeCross网页管理平台！<br><br><strong>请检查是否配置链账户</strong><li>未配置链账户将会影响基本使用</li>'
+                      intro: '欢迎使用交通大模型可信协同平台！<br><br><strong>请检查是否配置链上身份</strong><li>未配置链账户将会影响基本使用</li>'
                     },
                     {
                       element: '#Account',
-                      title: '账户管理',
+                      title: '链上身份管理',
                       intro: '请在这里配置链账户信息<br><br>账户功能详情介绍请参考：<a class="text-blue" href="https://wecross.readthedocs.io/zh_CN/latest/docs/manual/account.html" target="_blank">账号服务</a>',
                       position: 'right'
                     }

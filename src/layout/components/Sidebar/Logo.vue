@@ -14,7 +14,7 @@ export default {
   name: 'SidebarLogo',
   data() {
     return {
-      title: 'WeCross管理平台',
+      title: '交通大模型可信协同平台',
       logo: require('@/assets/nav-logo.svg')
     }
   }
@@ -36,7 +36,8 @@ export default {
   width: 100%;
   height: 50px;
   line-height: 50px;
-  background: #2b2f3a;
+  background: #071A32;
+  border-bottom: 1px solid rgba(55, 226, 255, 0.16);
   text-align: left;
   padding-left: 18px;
   overflow: hidden;
@@ -58,7 +59,7 @@ export default {
       color: #fff;
       font-weight: 600;
       line-height: 50px;
-      font-size: 15px;
+      font-size: 14px;
       font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
       vertical-align: middle;
     }

@@ -114,7 +114,7 @@
         <el-dropdown-menu slot="dropdown">
           <router-link to="/account/index">
             <el-dropdown-item>
-              账户管理
+              链上身份管理
             </el-dropdown-item>
           </router-link>
           <router-link to="/account/changePassword">
@@ -187,8 +187,9 @@ export default {
   height: 50px;
   overflow: hidden;
   position: relative;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  background: #071A32;
+  border-bottom: 1px solid rgba(55, 226, 255, 0.16);
+  box-shadow: 0 1px 8px rgba(0, 21, 41, 0.28);
 
   .hamburger-container {
     line-height: 46px;
@@ -199,7 +200,7 @@ export default {
     -webkit-tap-highlight-color: transparent;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.025);
+      background: #0D3154;
     }
   }
 
@@ -221,7 +222,7 @@ export default {
       padding: 0 5px;
       height: 100%;
       font-size: 18px;
-      color: #5a5e66;
+      color: #A9C7E8;
       vertical-align: text-bottom;
 
       &.hover-effect {
@@ -229,7 +230,7 @@ export default {
         transition: background 0.3s;
 
         &:hover {
-          background: rgba(0, 0, 0, 0.025);
+          background: #0D3154;
         }
       }
     }

@@ -31,50 +31,50 @@ export default {
       homePageSteps: [
         {
           element: '#Home',
-          title: '平台首页',
-          intro: '平台首页展示WeCross网络数据统计信息',
+          title: '交通数据可信协同总览',
+          intro: '展示交通数据可信共享、区块链网络和云边端协同运行情况。',
           position: 'right'
         },
         {
           element: '#Account',
-          title: '账户管理',
-          intro: '<li>查看跨链账户信息</li><li>添加链账户</li><li>设置默认链账户</li><li>删除链账户</li>',
+          title: '链上身份管理',
+          intro: '<li>管理参与方链上账户</li><li>添加链账户</li><li>设置默认交易身份</li><li>删除链账户</li>',
           position: 'right'
         },
         {
           element: '#Router',
-          title: '路由管理',
-          intro: '<li>查看跨链路由信息</li><li>添加孤立路由</li>',
+          title: '云边端协同节点',
+          intro: '<li>查看跨链路由和协同节点接入状态</li><li>添加孤立路由</li>',
           position: 'right'
         },
         {
           element: '#Resource',
-          title: '资源管理',
-          intro: '<li>查看跨链资源信息</li><li>调用跨链资源</li><li>跨链资源部署</li>',
+          title: '交通数据资产',
+          intro: '<li>查看可信数据资源</li><li>调用可信数据资源</li><li>登记可信数据资源</li>',
           position: 'right'
         },
         {
           element: '#Transaction',
-          title: '交易管理',
-          intro: '<li>查看跨链交易详细信息</li><li>发起跨链交易</li>',
+          title: '可信共享记录',
+          intro: '<li>查看链上可信共享交易</li><li>发起链上可信共享交易</li>',
           position: 'right'
         },
         {
           element: '#XATransaction',
-          title: '事务管理',
-          intro: '<li>查看跨链事务详细信息</li><li>发起跨链事务</li><li>恢复跨链事务上下文</li>',
+          title: '跨域协同任务',
+          intro: '<li>查看跨链事务详细信息</li><li>发起跨域协同任务</li><li>恢复跨链事务上下文</li>',
           position: 'right'
         },
         {
           element: '#Documents',
-          title: '参考文档',
-          intro: 'WeCross参考文档链接',
+          title: '平台使用指南',
+          intro: '查看平台使用指南和底层跨链组件参考资料。',
           position: 'right'
         },
         {
           element: '#issue',
           title: '意见和建议',
-          intro: '用不爽？有BUG？<br>欢迎向我们提出，让我们做得更好 😄',
+          intro: '遇到问题或有改进建议时，可通过这里反馈。',
           position: 'left'
         }, {
           element: '#userAvatar',
@@ -86,8 +86,8 @@ export default {
       accountSteps: [
         {
           element: '#Account',
-          title: '账户管理',
-          intro: '<li>查看跨链账户信息</li><li>添加链账户</li><li>设置默认链账户</li><li>删除链账户</li>',
+          title: '链上身份管理',
+          intro: '<li>管理参与方链上账户</li><li>添加链账户</li><li>设置默认交易身份</li><li>删除链账户</li>',
           position: 'right'
         },
         {
@@ -100,8 +100,8 @@ export default {
       resourceSteps: [
         {
           element: '#Resource',
-          title: '资源管理',
-          intro: '<li>查看跨链资源信息</li><li>调用跨链资源</li><li>跨链资源部署</li>',
+          title: '交通数据资产',
+          intro: '<li>查看可信数据资源</li><li>调用可信数据资源</li><li>登记可信数据资源</li>',
           position: 'right'
         },
         {
@@ -114,8 +114,8 @@ export default {
       transactionStep: [
         {
           element: '#Transaction',
-          title: '交易管理',
-          intro: '<li>查看跨链交易详细信息</li><li>发起跨链交易</li>',
+          title: '可信共享记录',
+          intro: '<li>查看链上可信共享交易</li><li>发起链上可信共享交易</li>',
           position: 'right'
         },
         {
@@ -190,7 +190,7 @@ export default {
         this.$store.dispatch('app/openSideBar', { withoutAnimation: false }).then(_ => {
           introJS().addStep({
             title: '欢迎✨',
-            intro: '欢迎使用WeCross网页管理平台'
+            intro: '欢迎使用交通大模型可信协同平台'
           }).addSteps(this.homePageSteps).setOptions({
             prevLabel: '上一步',
             nextLabel: '下一步',
@@ -216,7 +216,7 @@ export default {
         this.$store.dispatch('app/openSideBar', { withoutAnimation: false }).then(_ => {
           introJS().addStep({
             title: '欢迎✨',
-            intro: '欢迎使用WeCross网页管理平台'
+            intro: '欢迎使用交通大模型可信协同平台'
           }).addSteps(this.accountSteps)
             .onbeforechange(function(element) {
               if (element && element.id && element.id === 'accountHelp') {
@@ -251,7 +251,7 @@ export default {
         this.$store.dispatch('app/openSideBar', { withoutAnimation: false }).then(_ => {
           introJS().addStep({
             title: '欢迎✨',
-            intro: '欢迎使用WeCross网页管理平台'
+            intro: '欢迎使用交通大模型可信协同平台'
           }).addSteps(this.resourceSteps)
             .onbeforechange(function(element) {
               if (element && element.id && element.id === 'resourceHelp') {
@@ -286,7 +286,7 @@ export default {
         this.$store.dispatch('app/openSideBar', { withoutAnimation: false }).then(_ => {
           introJS().addStep({
             title: '欢迎✨',
-            intro: '欢迎使用WeCross网页管理平台'
+            intro: '欢迎使用交通大模型可信协同平台'
           }).addSteps(this.transactionStep)
             .onbeforechange(function(element) {
               if (element && element.id && element.id === 'transactionHelp') {
@@ -316,7 +316,7 @@ export default {
         steps: [
           {
             title: '欢迎✨',
-            intro: '可在此页面部署多种链类型的跨链资源'
+            intro: '可在此页面登记多种链类型的可信数据资源'
           },
           {
             element: '#deployHelp',
@@ -336,8 +336,8 @@ export default {
         steps: [
           {
             element: '#Router',
-            title: '路由管理',
-            intro: '<li>查看跨链路由信息</li><li>添加孤立路由</li>',
+            title: '云边端协同节点',
+            intro: '<li>查看跨链路由和协同节点接入状态</li><li>添加孤立路由</li>',
             position: 'right'
           }
         ]
@@ -352,8 +352,8 @@ export default {
         steps: [
           {
             element: '#XATransaction',
-            title: '事务管理',
-            intro: '<li>查看跨链事务详细信息</li><li>发起跨链事务</li><li>恢复跨链事务上下文</li>',
+            title: '跨域协同任务',
+            intro: '<li>查看跨链事务详细信息</li><li>发起跨域协同任务</li><li>恢复跨链事务上下文</li>',
             position: 'right'
           }
         ]

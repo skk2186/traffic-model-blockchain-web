@@ -33,7 +33,7 @@ export default {
       const first = matched[0]
 
       if (!this.isHomepage(first)) {
-        matched = [{ path: '/', meta: { title: 'WeCross管理平台' }}].concat(matched)
+        matched = [{ path: '/', meta: { title: '交通大模型可信协同平台' }}].concat(matched)
       }
 
       this.levelList = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)
@@ -70,7 +70,7 @@ export default {
   margin-left: 8px;
 
   .no-redirect {
-    color: #97a8be;
+    color: #91ACC7;
     cursor: text;
   }
 }

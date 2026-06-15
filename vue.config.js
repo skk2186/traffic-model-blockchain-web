@@ -5,7 +5,7 @@ function resolve(dir) {
   return path.join(__dirname, dir)
 }
 
-const name = 'WeCross Web App' // page title
+const name = '交通大模型可信协同平台' // page title
 
 // If your port is set to 80,
 // use administrator privileges to execute the command line.

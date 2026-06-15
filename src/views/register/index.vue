@@ -9,7 +9,7 @@
       label-position="left"
     >
       <div class="title-container">
-        <h3 class="title">欢迎注册 WeCross</h3>
+        <h3 class="title">欢迎注册 交通大模型可信协同平台</h3>
       </div>
 
       <el-tooltip placement="right">
@@ -439,7 +439,7 @@ export default {
 </script>
 
 <style lang="scss">
-$bg: #283443;
+$bg: #061426;
 $light_gray: #fff;
 $cursor: #fff;
 
@@ -483,7 +483,7 @@ $cursor: #fff;
 </style>
 
 <style lang="scss" scoped>
-$bg: #2d3a4b;
+$bg: #061426;
 $dark_gray: #889aa4;
 $light_gray: #eee;
 
