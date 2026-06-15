@@ -96,7 +96,7 @@ const FabricInstallSteps = [
   }, {
     element: '#onSubmit',
     title: '执行部署操作',
-    intro: '检查表单，执行操作<li>因为Fabric的原因，安装的chaincode必须实例化才能显示在跨链资源列表</li>',
+    intro: '检查表单，执行操作<li>因为 Fabric 的原因，安装的 chaincode 必须实例化才能显示在可信数据资产列表</li>',
     position: 'top'
   }
 ]

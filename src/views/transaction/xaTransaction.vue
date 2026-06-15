@@ -1,14 +1,18 @@
 <template>
   <div class="app-container">
-    <el-card header="事务步骤">
+    <div class="business-page-header">
+      <h2>跨域协同任务</h2>
+      <p>使用两阶段事务保障多链数据状态一致性，提交、回滚和恢复操作保持 XA 事务原始语义。</p>
+    </div>
+    <el-card header="协同任务步骤">
       <template slot="header">
-        <el-page-header content="事务步骤" title="事务管理" @back="() => {$router.push({ path: 'xaTransactionList' })}" />
+        <el-page-header content="协同任务步骤" title="跨域协同任务" @back="() => {$router.push({ path: 'xaTransactionList' })}" />
       </template>
       <el-row :gutter="24">
         <el-steps :active="stepActive" align-center finish-status="finish">
-          <el-step title="步骤1" description="选择所需资源，开启一段事务" />
-          <el-step title="步骤2" description="在本次事务中执行事务交易" />
-          <el-step title="步骤3" description="结束事务，选择回滚/提交事务" />
+          <el-step title="步骤1" description="选择数据资产，开启跨域协同任务" />
+          <el-step title="步骤2" description="在本次任务中执行链上资源调用" />
+          <el-step title="步骤3" description="结束任务，选择回滚/提交事务" />
         </el-steps>
       </el-row>
     </el-card>
@@ -18,8 +22,8 @@
       <el-row v-if="stepActive === 0" style="margin-top: 15px;">
         <el-card>
           <template slot="header">
-            <span>开启事务</span>
-            <el-tooltip class="XAHelp" effect="light" content="如何开启事务？" placement="top">
+            <span>开启跨域协同任务</span>
+            <el-tooltip class="XAHelp" effect="light" content="如何开启跨域协同任务？" placement="top">
               <el-button type="text" size="mini" style="margin-left: 10px;padding: 0px" @click="howToStartXA">
                 <svg-icon style="vertical-align: 0px" icon-class="question" />
               </el-button>
@@ -35,17 +39,17 @@
               >
                 <el-form-item
                   id="XAID"
-                  label="事务ID："
+                  label="协同任务ID："
                   :rules="[
-                    { required: true, message: '事务ID不能为空', trigger: 'change' },
-                    { pattern: /^[0-9a-fA-F]+$/, required: true, message: '请检查事务ID格式：16进制', trigger: 'change' },
-                    { required: true, message: '事务ID长度不能超过128', trigger: 'change', max: 128 }
+                    { required: true, message: '协同任务ID不能为空', trigger: 'change' },
+                    { pattern: /^[0-9a-fA-F]+$/, required: true, message: '请检查协同任务ID格式：16进制', trigger: 'change' },
+                    { required: true, message: '协同任务ID长度不能超过128', trigger: 'change', max: 128 }
                   ]"
                   prop="transactionID"
                 >
                   <el-input
                     v-model.trim="transactionForm.transactionID"
-                    placeholder="请输入事务ID"
+                    placeholder="请输入协同任务ID"
                     style="width: 100%;"
                   >
                     <el-button
@@ -54,7 +58,7 @@
                       style="padding: 5px"
                       type="primary"
                       @click="creatUUID"
-                    >生成事务ID
+                    >生成任务ID
                     </el-button>
                   </el-input>
                 </el-form-item>
@@ -83,7 +87,7 @@
           <div slot="header">
             <el-row>
               <el-col :span="11" style="text-align: left">
-                <span>执行事务</span>
+                <span>执行任务调用</span>
                 <el-tooltip class="XAHelp" effect="light" content="如何执行事务？" placement="top">
                   <el-button type="text" size="mini" style="margin-left: 10px;padding: 0px" @click="howToExecXA">
                     <svg-icon style="vertical-align: 0px" icon-class="question" />
@@ -92,7 +96,7 @@
               </el-col>
               <el-col :span="13" style="text-align: left">
                 <el-divider direction="vertical" />
-                <span style="margin-left: 10px">事务步骤列表</span>
+                <span style="margin-left: 10px">任务步骤列表</span>
               </el-col>
             </el-row>
           </div>
@@ -107,7 +111,7 @@
               <el-select
                 slot="path"
                 v-model="transactionForm.path"
-                placeholder="请输入跨链资源路径"
+                placeholder="请选择资产可信标识"
                 style="width: calc(100% - 63px)"
                 filterable
                 default-first-option
@@ -125,12 +129,12 @@
           <el-col id="xaList" :span="12" :offset="1">
             <el-row>
               <div style="font-size: 14px">
-                <el-tooltip effect="light" content="复制事务ID" placement="top-start">
+                <el-tooltip effect="light" content="复制协同任务ID" placement="top-start">
                   <clipboard :input-data="$store.getters.transactionID" style="float:right;z-index: 1000" />
                 </el-tooltip>
                 <el-tooltip effect="light" :content="$store.getters.transactionID" placement="top-start">
                   <div>
-                    {{ "当前事务ID： " + limitString($store.getters.transactionID) }}
+                    {{ "当前协同任务ID： " + limitString($store.getters.transactionID) }}
                   </div>
                 </el-tooltip>
               </div>
@@ -144,8 +148,8 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="xaTransactionSeq" label="步骤序号" min-width="80px" show-overflow-tooltip />
-                <el-table-column prop="username" label="跨链账户" min-width="70px" show-overflow-tooltip />
-                <el-table-column prop="path" label="资源路径" min-width="70px" show-overflow-tooltip />
+                <el-table-column prop="username" label="链上身份" min-width="70px" show-overflow-tooltip />
+                <el-table-column prop="path" label="资产可信标识" min-width="70px" show-overflow-tooltip />
                 <el-table-column prop="method" label="调用方法" min-width="70px" />
               </el-table>
             </el-row>
@@ -157,7 +161,7 @@
     <!--  step3  -->
     <el-collapse-transition>
       <el-row v-if="stepActive === 2" style="margin-top: 10px">
-        <el-card style="height: 70vh" header="事务详情">
+        <el-card style="height: 70vh" header="协同任务详情">
           <el-row>
             <el-col>
               <el-table
@@ -176,16 +180,16 @@
                     <span>{{ scope.row.startTimestamp | formatDate }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="xaTransactionID" label="事务ID" min-width="90px" show-overflow-tooltip />
-                <el-table-column prop="username" label="跨链账户" min-width="50px" />
-                <el-table-column min-width="80px" label="锁定资源">
+                <el-table-column prop="xaTransactionID" label="协同任务ID" min-width="90px" show-overflow-tooltip />
+                <el-table-column prop="username" label="链上身份" min-width="50px" />
+                <el-table-column min-width="80px" label="锁定数据资产">
                   <template slot-scope="scope">
                     <div v-for="path in scope.row.paths" :key="path">
                       {{ path }}<br>
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column type="expand" width="80px" label="事务步骤">
+                <el-table-column type="expand" width="80px" label="任务步骤">
                   <template slot-scope="props">
                     <el-table stripe fit style="width: 100%;" :data="props.row.xaTransactionSteps" tooltip-effect="light">
                       <el-table-column prop="timestamp" label="执行时间" min-width="75px" show-overflow-tooltip>
@@ -194,8 +198,8 @@
                         </template>
                       </el-table-column>
                       <el-table-column prop="xaTransactionSeq" label="步骤序号" min-width="80px" show-overflow-tooltip />
-                      <el-table-column prop="username" label="跨链账户" min-width="60px" />
-                      <el-table-column prop="path" label="资源路径" min-width="70px" />
+                      <el-table-column prop="username" label="链上身份" min-width="60px" />
+                      <el-table-column prop="path" label="资产可信标识" min-width="70px" />
                       <el-table-column prop="method" label="调用方法" min-width="70px" />
                     </el-table>
                   </template>
@@ -244,7 +248,7 @@
           </el-row>
           <el-row>
             <el-col style="text-align: center; margin-top: 20px">
-              <span style="color: #579ef8; font-weight: bold; font-size: 20px">已结束当前事务</span>
+              <span style="color: #579ef8; font-weight: bold; font-size: 20px">已结束当前跨域协同任务</span>
             </el-col>
           </el-row>
           <el-row>
@@ -254,12 +258,12 @@
                   type="primary"
                   icon="el-icon-circle-plus-outline"
                   @click="reloadTransaction"
-                >再开启一段事务
+                >再开启一个协同任务
                 </el-button>
                 <el-button
                   icon="el-icon-search"
                   @click="() => {$router.push({ path: 'xaTransactionList' })}"
-                >查看事务列表
+                >查看任务列表
                 </el-button>
               </el-button-group>
             </el-col>
@@ -325,7 +329,7 @@ export default {
     return {
       stepActive: 0,
       stepBackBtnText: '上一步',
-      stepForwardBtnText: '开启事务',
+      stepForwardBtnText: '开启任务',
       transactionDetail: [],
       transactionStep: [],
       resourceData: [],
@@ -356,7 +360,7 @@ export default {
   watch: {
     stepActive(value) {
       if (value === 1) {
-        this.stepForwardBtnText = '结束事务'
+        this.stepForwardBtnText = '结束任务'
         this.stepBackBtnText = '上一步'
         this.getXADetail()
       }
@@ -372,10 +376,10 @@ export default {
     },
     stepBtnClick() {
       switch (this.stepForwardBtnText) {
-        case '开启事务':
+        case '开启任务':
           this.startTransaction()
           break
-        case '结束事务':
+        case '结束任务':
           this.endTransaction()
           break
       }
@@ -392,10 +396,10 @@ export default {
         this.$msgbox({
           title: '提示',
           message: h('p', null, [
-            h('h3', { style: 'font-weight: bold; margin-left:10px' }, '目前有事务正在执行中，是否恢复？'),
-            h('li', { style: 'font-weight: bold; margin-left:10px' }, '事务ID：'),
+            h('h3', { style: 'font-weight: bold; margin-left:10px' }, '目前有跨域协同任务正在执行中，是否恢复？'),
+            h('li', { style: 'font-weight: bold; margin-left:10px' }, '协同任务ID：'),
             h('p', { style: { margin: '5px 0', padding: '8px 10px' }}, limitString(xaID)),
-            h('li', { style: 'font-weight: bold; margin-left:10px' }, '锁定资源: '),
+            h('li', { style: 'font-weight: bold; margin-left:10px' }, '锁定数据资产: '),
             h('textarea', {
               attrs: {
                 readonly: true
@@ -420,8 +424,8 @@ export default {
           closeOnClickModal: false,
           closeOnPressEscape: false,
           showCancelButton: true,
-          confirmButtonText: '恢复事务',
-          cancelButtonText: '新建事务'
+          confirmButtonText: '恢复任务',
+          cancelButtonText: '新建任务'
         }).then(_ => {
           getXATransaction({
             version: 1,
@@ -432,7 +436,7 @@ export default {
           }).then(response => {
             if (response.errorCode !== 0) {
               this.$message.error({
-                message: '获取事务详情失败，错误：' + buildXAResponseError(response),
+                message: '获取协同任务详情失败，错误：' + buildXAResponseError(response),
                 center: true,
                 duration: 5000
               })
@@ -441,7 +445,7 @@ export default {
             } else {
               if (response.data.xaResponse.status !== 0) {
                 this.$message.warning({
-                  message: '警告：获取事务详情有错误：' + buildXAResponseError(response),
+                  message: '警告：获取协同任务详情有错误：' + buildXAResponseError(response),
                   center: true,
                   duration: 5000
                 })
@@ -449,7 +453,7 @@ export default {
                 this.$store.commit('transaction/RESET_STATE')
               }
               if (response.data.xaTransaction.status !== 'processing') {
-                this.$msgbox('恢复事务失败，该事务已经回滚/提交！', '错误', 'error')
+                this.$msgbox('恢复协同任务失败，该事务已经回滚/提交！', '错误', 'error')
                 console.log('get xaTransaction error, this xaTransaction is not processing')
                 removeXATX()
                 this.$store.commit('transaction/RESET_STATE')
@@ -495,7 +499,7 @@ export default {
         } else {
           this.$message({
             type: 'error',
-            message: '查询资源列表失败, errorCode: ' + response.errorCode + '，错误信息：' + response.message
+            message: '查询可信数据资产失败, errorCode: ' + response.errorCode + '，错误信息：' + response.message
           })
         }
       }).catch((error) => {
@@ -536,7 +540,7 @@ export default {
       this.$refs['transactionForm'].validate(validate => {
         if (this.toResourceData == null || this.toResourceData.length < 1) {
           this.$message({
-            message: '开启事务前请先选择资源！', type: 'error', center: true
+            message: '开启协同任务前请先选择数据资产！', type: 'error', center: true
           })
           return
         }
@@ -669,14 +673,14 @@ export default {
       }).then(response => {
         if (response.errorCode !== 0) {
           this.$message.error({
-            message: '获取事务详情失败，错误：' + buildXAResponseError(response),
+            message: '获取协同任务详情失败，错误：' + buildXAResponseError(response),
             center: true,
             duration: 5000
           })
         } else {
           if (response.data.xaResponse.status !== 0) {
             this.$message.warning({
-              message: '警告：获取事务详情有错误：' + buildXAResponseError(response),
+              message: '警告：获取协同任务详情有错误：' + buildXAResponseError(response),
               center: true,
               duration: 5000
             })

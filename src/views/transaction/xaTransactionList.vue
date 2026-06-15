@@ -1,10 +1,14 @@
 <template>
   <div class="app-container">
+    <div class="business-page-header">
+      <h2>跨域协同任务</h2>
+      <p>基于 XA Transaction 的跨链一致性保障机制，用于保障多链数据状态一致性，不代表真实联邦学习训练任务。</p>
+    </div>
     <el-row :gutter="10">
       <el-col :span="6">
         <el-card style="height: 90vh">
           <div slot="header">
-            <span>导航</span>
+            <span>协同网络导航</span>
             <el-tooltip
               id="resourceHelp"
               effect="light"
@@ -42,7 +46,7 @@
               type="primary"
               icon="el-icon-s-order"
               @click="onStartXATransaction"
-            >发起事务</el-button>
+            >创建跨域协同任务</el-button>
           </el-row>
           <el-row :gutter="20">
             <el-table
@@ -64,7 +68,7 @@
               </el-table-column>
               <el-table-column
                 prop="xaTransactionID"
-                label="事务ID"
+                label="协同任务ID"
                 min-width="17%"
                 show-overflow-tooltip
               >
@@ -76,7 +80,7 @@
                   {{ scope.row.xaTransactionID }}
                 </template>
               </el-table-column>
-              <el-table-column label="跨链账户" min-width="9%">
+              <el-table-column label="链上身份" min-width="9%">
                 <template slot-scope="scope">
                   <el-tag
                     v-if="!nonNull(scope.row.username)"
@@ -88,7 +92,7 @@
                   }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="锁定资源" min-width="13%">
+              <el-table-column label="锁定数据资产" min-width="13%">
                 <template slot-scope="scope">
                   <li
                     v-for="path in scope.row.paths"
@@ -99,7 +103,7 @@
                   </li>
                 </template>
               </el-table-column>
-              <el-table-column label="事务状态" min-width="10%">
+              <el-table-column label="任务状态" min-width="10%">
                 <template slot-scope="scope">
                   <el-tag :type="filterTag(scope.row.status)" effect="dark">{{
                     filterData(scope.row.status)
@@ -133,7 +137,7 @@
                         label="步骤序号"
                         min-width="10%"
                       />
-                      <el-table-column label="跨链账户" min-width="8%">
+                      <el-table-column label="链上身份" min-width="8%">
                         <template slot-scope="step">
                           <el-tag
                             v-if="!nonNull(step.row.username)"
@@ -147,7 +151,7 @@
                       </el-table-column>
                       <el-table-column
                         prop="path"
-                        label="资源路径"
+                        label="资产可信标识"
                         min-width="12%"
                         show-overflow-tooltip
                       />
@@ -360,7 +364,7 @@ export default {
     },
     fetchXATransactionList() {
       if (!this.currentChain) {
-        this.$message.error('请先从zone-chain导航中选择对应的链')
+        this.$message.error('请先从协同网络导航中选择对应的链')
         return
       }
       this.loadingList = true
@@ -386,7 +390,7 @@ export default {
             response.errorCode !== 0
           ) {
             handleErrorMsgBox(
-              '查询事务列表失败: ',
+              '查询跨域协同任务失败: ',
               '错误',
               buildXAResponseError(response),
               null

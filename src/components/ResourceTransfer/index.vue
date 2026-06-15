@@ -3,7 +3,7 @@
     <!-- transfer left -->
     <div class="transfer-base">
       <h3 class="transfer-title">
-        <span>待选资源列表</span>
+        <span>待选数据资产</span>
       </h3>
       <div class="transfer-left">
 
@@ -33,7 +33,7 @@
             @selection-change="handleSelectionChange"
           >
             <el-table-column fixed width="42px" type="selection" :selectable="(row)=>{return !row.path.endsWith('.WeCrossHub')}" />
-            <el-table-column label="可选资源路径" prop="path" show-overflow-tooltip>
+            <el-table-column label="可选资产可信标识" prop="path" show-overflow-tooltip>
               <template slot-scope="scope">{{ scope.row.path }}</template>
             </el-table-column>
           </el-table>
@@ -79,7 +79,7 @@
           :indeterminate="to_is_indeterminate"
           @change="toAllBoxChange"
         />
-        <span>已选资源列表</span>
+        <span>已选数据资产</span>
       </h3>
       <!-- transfer right panel -->
       <div class="transfer-main">

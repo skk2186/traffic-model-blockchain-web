@@ -5,13 +5,13 @@
       tooltip-effect="light"
       height="calc(100% - 60px)"
     >
-      <el-table-column label="资源路径" min-width="100px" show-overflow-tooltip>
+      <el-table-column label="资产可信标识" min-width="100px" show-overflow-tooltip>
         <template slot-scope="scope">{{ scope.row.path }}</template>
       </el-table-column>
-      <el-table-column label="资源类型" width="120px">
+      <el-table-column label="底层对象类型" width="120px">
         <template slot-scope="scope"><el-tag type="info">{{ scope.row.stubType }}</el-tag></template>
       </el-table-column>
-      <el-table-column label="属性" min-width="150px" show-overflow-tooltip>
+      <el-table-column label="底层属性" min-width="150px" show-overflow-tooltip>
         <template slot-scope="scope">
           <clipboard :input-data="JSON.stringify(scope.row.properties)" style="margin-right: 10px;float:left" />
           <span>{{ JSON.stringify(scope.row.properties) }}</span>
@@ -26,14 +26,14 @@
               icon="el-icon-edit-outline"
               style="padding: 8px"
               @click="onSend(scope.row.path)"
-            >发交易</el-button>
+            >调用数据服务</el-button>
             <el-button
               plain
               size="mini"
               icon="el-icon-view"
               style="padding: 8px"
               @click="onCall(scope.row.path)"
-            >查状态</el-button>
+            >查询状态</el-button>
           </el-button-group>
         </template>
       </el-table-column>
@@ -48,7 +48,7 @@
       @current-change="setPage"
     />
 
-    <el-dialog :title="'调用资源'" :visible.sync="callDialogOpen" :destroy-on-close="true" width="45%">
+    <el-dialog :title="'调用可信数据资产'" :visible.sync="callDialogOpen" :destroy-on-close="true" width="45%">
       <el-row>
         <el-col :span="18" :offset="2">
           <el-form v-loading="loading">
@@ -134,7 +134,7 @@ export default {
         } else {
           this.$message({
             type: 'error',
-            message: '查询资源列表失败, 错误信息: ' + response.message
+            message: '查询可信数据资产失败, 错误信息: ' + response.message
           })
         }
       }).catch((error) => {

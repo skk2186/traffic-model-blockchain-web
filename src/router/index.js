@@ -37,6 +37,20 @@ export const constantRoutes = [
   }
 ]
 
+if (process.env.NODE_ENV === 'development') {
+  constantRoutes.push({
+    path: '/style-preview',
+    component: Layout,
+    hidden: true,
+    children: [{
+      path: '',
+      name: 'StylePreview',
+      component: () => import('@/views/style-preview/index'),
+      meta: { title: 'UI 样式预览' }
+    }]
+  })
+}
+
 export const asyncRoutes = [
   {
     path: '/account',

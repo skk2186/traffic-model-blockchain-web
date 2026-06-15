@@ -12,12 +12,12 @@
         <el-form-item label="调用方式:">
           <el-col>
             <el-radio-group v-model="transaction.execMethod" size="small" @change="onExecMethodChange">
-              <el-radio label="sendTransaction">发交易</el-radio>
-              <el-radio label="call">查状态</el-radio>
+              <el-radio label="sendTransaction">发起链上调用</el-radio>
+              <el-radio label="call">查询状态</el-radio>
             </el-radio-group>
           </el-col>
         </el-form-item>
-        <el-form-item label="资源路径:" prop="path">
+        <el-form-item label="资产可信标识:" prop="path">
           <slot name="path" />
         </el-form-item>
         <el-form-item label="调用方法:" prop="method">
@@ -66,7 +66,7 @@
         </div>
         <el-form-item style="margin-bottom: 20px">
           <el-popconfirm
-            title="确定执行该调用？"
+            title="确定执行本次可信共享调用？"
             @onConfirm="onSubmit"
           >
             <el-button
@@ -74,7 +74,7 @@
               v-loading.fullscreen.lock="loading"
               size="small"
               type="primary"
-            >执行调用</el-button>
+            >执行可信调用</el-button>
           </el-popconfirm>
           <el-button size="small" style="margin-left: 10px" @click="clearForm">重置表单</el-button>
         </el-form-item>

@@ -1,12 +1,16 @@
 <template>
   <transition name="el-fade-in-linear">
     <div class="app-container">
+      <div class="business-page-header">
+        <h2>参与方与访问控制</h2>
+        <p>管理平台参与方、角色显示和可访问链网络。admin/user 等后端角色值和权限模型保持不变。</p>
+      </div>
       <el-row :gutter="10">
-        <el-card style="height: 190px" header="管理员信息">
+        <el-card style="height: 190px" header="管理员身份信息">
           <el-row>
             <el-col :span="14">
               <el-form label-position="left" size="small" label-width="80px">
-                <el-form-item label="管理账户：">
+                <el-form-item label="管理身份：">
                   <el-tag id="UA" :type="ua.admin ? 'warning': 'success'"><span>{{ ua.username }}</span></el-tag>
                 </el-form-item>
                 <el-form-item id="uaPK" label="公钥信息：">
@@ -25,7 +29,7 @@
                     <el-row>
                       <el-col>
                         <el-row>
-                          <div style="font-size: 16px;font-weight: bolder">用户数</div>
+                          <div style="font-size: 16px;font-weight: bolder">参与方</div>
                           <div style="font-size: 14px; color: #606266; margin-top: 5px">已注册用户</div>
                         </el-row>
                       </el-col>
@@ -45,8 +49,8 @@
                     <el-row>
                       <el-col>
                         <el-row>
-                          <div style="font-size: 16px;font-weight: bolder">区块链</div>
-                          <div style="font-size: 14px; color: #606266; margin-top: 5px">已部署区块链</div>
+                          <div style="font-size: 16px;font-weight: bolder">协同链网络</div>
+                          <div style="font-size: 14px; color: #606266; margin-top: 5px">可授权链网络</div>
                         </el-row>
                       </el-col>
                     </el-row>
@@ -66,7 +70,7 @@
         </el-card>
       </el-row>
       <el-row :gutter="10" style="margin-top: 10px">
-        <el-card style="height: calc(90vh - 190px)" header="用户列表">
+        <el-card style="height: calc(90vh - 190px)" header="参与方列表">
           <el-table
             :data="userData.filter(data => !search || data.username.toLowerCase().includes(search.toLowerCase()))"
             size="medium"
@@ -76,8 +80,8 @@
             :fit="true"
             tooltip-effect="light"
           >
-            <el-table-column label="用户名" prop="username" :show-overflow-tooltip="true" />
-            <el-table-column label="可操作区块链" prop="allowChainPaths" width="400px">
+            <el-table-column label="参与方账号" prop="username" :show-overflow-tooltip="true" />
+            <el-table-column label="可访问协同链网络" prop="allowChainPaths" width="400px">
               <template slot-scope="item">
                 <div v-for="(chainItem, index) in item.row.allowChainPaths.slice(0,2)" :key="index" style="display: inline-block; margin: 5px">
                   <el-tag type="info">{{ chainItem }}</el-tag>
@@ -90,7 +94,7 @@
                 >
                   <el-table :data="makeChainsTable(item.row.allowChainPaths)" max-height="260px" tooltip-effect="light" :stripe="true">
                     <el-table-column property="id" width="50px" label="序列" />
-                    <el-table-column property="name" width="150px" label="区块链名" :show-overflow-tooltip="true" />
+                    <el-table-column property="name" width="150px" label="协同网络标识" :show-overflow-tooltip="true" />
                   </el-table>
                   <el-button slot="reference" type="text" style="margin-left: 5px">更多...</el-button>
                 </el-popover>
@@ -103,28 +107,28 @@
             </el-table-column>
             <el-table-column align="right">
               <template slot="header" slot-scope="scope">
-                <el-input v-model="search" size="small" placeholder="搜索用户">
+                <el-input v-model="search" size="small" placeholder="搜索参与方">
                   <el-button slot="prepend" icon="el-icon-refresh" @click="()=>{ getUser(scope)}" />
                 </el-input>
               </template>
               <template slot-scope="scope">
                 <el-button size="mini" @click="handleAccessBtn(scope.row)">
-                  权限管理
+                  访问控制
                 </el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-card>
       </el-row>
-      <el-dialog :title="'权限管理'" :visible.sync="dialogOpen" :destroy-on-close="true" :modal="true" width="60%">
+      <el-dialog :title="'参与方访问控制'" :visible.sync="dialogOpen" :destroy-on-close="true" :modal="true" width="60%">
         <el-row>
           <div style="text-emphasis: center;">
             <div>
               <el-transfer
                 v-model="userState.chosenChains"
                 filterable
-                :titles="['待选链', '可操作链']"
-                :button-texts="['取消权限', '添加权限']"
+                :titles="['待授权链网络', '已授权链网络']"
+                :button-texts="['取消访问', '添加访问']"
                 :format="{
                   noChecked: '${total}',
                   hasChecked: '${checked}/${total}'

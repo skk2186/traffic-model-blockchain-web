@@ -1,112 +1,351 @@
+@import './theme-tokens.scss';
+
 // cover some element-ui styles
 
 .el-breadcrumb__inner,
 .el-breadcrumb__inner a {
   font-weight: 400 !important;
-  color: #A9C7E8 !important;
+  color: $theme-text-secondary !important;
 }
 
 .el-breadcrumb__inner a:hover {
-  color: #37E2FF !important;
+  color: $theme-primary !important;
 }
 
-.el-card,
-.el-message-box,
-.el-dialog {
-  background: #0D223B;
-  border-color: rgba(55, 226, 255, 0.18);
-  color: #EAF6FF;
+.el-button {
+  border-radius: $theme-radius-sm;
+  border-color: $theme-border;
+  color: $theme-text-regular;
+  background: $theme-card-bg;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+
+  &:hover,
+  &:focus {
+    color: $theme-primary;
+    border-color: $theme-primary-hover;
+    background: $theme-primary-light;
+  }
+
+  &:active {
+    color: $theme-primary-active;
+    border-color: $theme-primary-active;
+  }
+
+  &.is-disabled,
+  &.is-disabled:hover,
+  &.is-disabled:focus {
+    color: $theme-text-disabled;
+    border-color: $theme-border-light;
+    background: $theme-disabled-bg;
+  }
+}
+
+.el-button--primary {
+  color: $theme-text-inverse;
+  background: $theme-primary;
+  border-color: $theme-primary;
+
+  &:hover,
+  &:focus {
+    color: $theme-text-inverse;
+    background: $theme-primary-hover;
+    border-color: $theme-primary-hover;
+  }
+
+  &:active {
+    background: $theme-primary-active;
+    border-color: $theme-primary-active;
+  }
+}
+
+.el-button--success {
+  color: $theme-text-inverse;
+  background: $theme-success;
+  border-color: $theme-success;
+}
+
+.el-button--warning {
+  color: $theme-text-inverse;
+  background: $theme-warning;
+  border-color: $theme-warning;
+}
+
+.el-button--danger {
+  color: $theme-text-inverse;
+  background: $theme-danger;
+  border-color: $theme-danger;
+}
+
+.el-button--text {
+  color: $theme-primary;
+  background: transparent;
+  border-color: transparent;
+
+  &:hover,
+  &:focus {
+    color: $theme-primary-hover;
+    background: transparent;
+  }
+
+  &:active {
+    color: $theme-primary-active;
+  }
+}
+
+.el-input__inner,
+.el-textarea__inner {
+  border-color: $theme-border;
+  border-radius: $theme-radius-sm;
+  color: $theme-text-primary;
+  background-color: $theme-card-bg;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.el-input__inner:hover,
+.el-textarea__inner:hover {
+  border-color: $theme-border-dark;
+}
+
+.el-input__inner:focus,
+.el-textarea__inner:focus {
+  border-color: $theme-primary;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
+}
+
+.el-input.is-disabled .el-input__inner,
+.el-textarea.is-disabled .el-textarea__inner {
+  color: $theme-text-disabled;
+  background-color: $theme-disabled-bg;
+  border-color: $theme-border-light;
+}
+
+.el-input__inner::placeholder,
+.el-textarea__inner::placeholder {
+  color: $theme-text-placeholder;
+}
+
+.el-select .el-input.is-focus .el-input__inner,
+.el-cascader .el-input.is-focus .el-input__inner,
+.el-date-editor.el-input__inner:focus {
+  border-color: $theme-primary;
+}
+
+.el-card {
+  color: $theme-text-primary;
+  background: $theme-card-bg;
+  border: 1px solid $theme-border-light;
+  border-radius: $theme-radius;
+  box-shadow: $theme-shadow-sm;
 }
 
 .el-card__header {
-  border-bottom-color: rgba(55, 226, 255, 0.16);
+  border-bottom-color: $theme-border-light;
+  color: $theme-text-primary;
+  font-weight: 600;
+}
+
+.el-table,
+.el-table__expanded-cell {
+  color: $theme-text-regular;
+  background-color: $theme-card-bg;
+}
+
+.el-table th,
+.el-table tr {
+  background-color: $theme-card-bg;
+}
+
+.el-table th {
+  color: $theme-text-primary;
+  background-color: $theme-fill-bg;
+  font-weight: 600;
+}
+
+.el-table td,
+.el-table th.is-leaf {
+  border-bottom-color: $theme-border-light;
+}
+
+.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background: #fbfdff;
+}
+
+.el-table--enable-row-hover .el-table__body tr:hover > td {
+  background-color: $theme-fill-hover;
+}
+
+.el-table__body tr.current-row > td {
+  background-color: $theme-primary-light;
+}
+
+.el-table::before,
+.el-table--border::after,
+.el-table--group::after {
+  background-color: $theme-border-light;
+}
+
+.el-table__empty-text,
+.el-empty__description p {
+  color: $theme-text-secondary;
+}
+
+.el-dialog,
+.el-message-box {
+  color: $theme-text-primary;
+  background: $theme-overlay-bg;
+  border-radius: $theme-radius-lg;
+  box-shadow: $theme-shadow-popover;
+}
+
+.el-dialog__header,
+.el-message-box__header {
+  border-bottom: 1px solid $theme-border-light;
 }
 
 .el-dialog__title,
 .el-message-box__title,
 .el-form-item__label {
-  color: #EAF6FF;
+  color: $theme-text-primary;
 }
 
 .el-dialog__body,
 .el-message-box__content {
-  color: #A9C7E8;
+  color: $theme-text-regular;
 }
 
-.el-table,
-.el-table__expanded-cell {
-  background-color: #0D223B;
-  color: #EAF6FF;
+.el-dialog__footer,
+.el-message-box__btns {
+  border-top: 1px solid $theme-border-light;
 }
 
-.el-table th,
-.el-table tr {
-  background-color: #0D223B;
-}
-
-.el-table th {
-  color: #A9C7E8;
-}
-
-.el-table td,
-.el-table th.is-leaf {
-  border-bottom-color: rgba(145, 172, 199, 0.16);
-}
-
-.el-table--enable-row-hover .el-table__body tr:hover > td {
-  background-color: #12304F;
-}
-
-.el-table::before {
-  background-color: rgba(145, 172, 199, 0.16);
-}
-
-.el-input__inner,
-.el-textarea__inner,
 .el-select-dropdown,
 .el-dropdown-menu,
+.el-cascader__dropdown,
 .el-picker-panel,
-.el-pagination .btn-prev,
-.el-pagination .btn-next,
-.el-pagination button:disabled,
-.el-pager li {
-  background-color: #0B1E35;
-  border-color: rgba(55, 226, 255, 0.18);
-  color: #EAF6FF;
+.el-popover {
+  color: $theme-text-primary;
+  background: $theme-overlay-bg;
+  border-color: $theme-border-light;
+  box-shadow: $theme-shadow-popover;
 }
 
-.el-input__inner::placeholder,
-.el-textarea__inner::placeholder {
-  color: #6F8BA8;
-}
-
-.el-input__inner:focus,
-.el-textarea__inner:focus {
-  border-color: #37E2FF;
-}
-
-.el-select-dropdown__item {
-  color: #A9C7E8;
+.el-select-dropdown__item,
+.el-dropdown-menu__item,
+.el-cascader-node {
+  color: $theme-text-regular;
 }
 
 .el-select-dropdown__item.hover,
 .el-select-dropdown__item:hover,
 .el-dropdown-menu__item:focus,
-.el-dropdown-menu__item:not(.is-disabled):hover {
-  background-color: #12304F;
-  color: #37E2FF;
+.el-dropdown-menu__item:not(.is-disabled):hover,
+.el-cascader-node:not(.is-disabled):focus,
+.el-cascader-node:not(.is-disabled):hover {
+  color: $theme-primary;
+  background-color: $theme-fill-hover;
+}
+
+.el-select-dropdown__item.selected,
+.el-cascader-node.in-active-path,
+.el-cascader-node.is-active,
+.el-cascader-node.is-selectable.in-checked-path {
+  color: $theme-primary;
+  font-weight: 600;
+}
+
+.el-tooltip__popper {
+  max-width: 300px;
+  line-height: 180%;
+  border-radius: $theme-radius-sm;
+}
+
+.el-tooltip__popper.is-light {
+  color: $theme-text-primary;
+  background: $theme-overlay-bg;
+  border-color: $theme-border-light;
+  box-shadow: $theme-shadow-popover;
 }
 
 .el-pagination {
-  color: #A9C7E8;
+  color: $theme-text-secondary;
+}
+
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pager li {
+  min-width: 32px;
+  border-radius: $theme-radius-sm;
+  color: $theme-text-regular;
+  background: $theme-card-bg;
+}
+
+.el-pagination button:hover,
+.el-pager li:hover {
+  color: $theme-primary;
 }
 
 .el-pager li.active {
-  color: #37E2FF;
+  color: $theme-text-inverse;
+  background: $theme-primary;
 }
 
-.el-empty__description p {
-  color: #91ACC7;
+.el-pagination button:disabled {
+  color: $theme-text-disabled;
+  background: $theme-disabled-bg;
+}
+
+.el-tag {
+  border-radius: $theme-radius-sm;
+}
+
+.el-tag--info {
+  color: $theme-info;
+  background: #eef3f7;
+  border-color: #dde7f0;
+}
+
+.el-tabs__item {
+  color: $theme-text-secondary;
+}
+
+.el-tabs__item:hover,
+.el-tabs__item.is-active {
+  color: $theme-primary;
+}
+
+.el-tabs__active-bar {
+  background-color: $theme-primary;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner,
+.el-checkbox__input.is-indeterminate .el-checkbox__inner,
+.el-radio__input.is-checked .el-radio__inner {
+  background-color: $theme-primary;
+  border-color: $theme-primary;
+}
+
+.el-checkbox__input.is-checked + .el-checkbox__label,
+.el-radio__input.is-checked + .el-radio__label {
+  color: $theme-primary;
+}
+
+.el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.78);
+}
+
+.el-loading-spinner .path {
+  stroke: $theme-primary;
+}
+
+.el-loading-spinner .el-loading-text {
+  color: $theme-primary;
+}
+
+.el-message,
+.el-notification {
+  border-radius: $theme-radius;
+  border-color: $theme-border-light;
+  box-shadow: $theme-shadow-popover;
 }
 
 .el-upload {
@@ -204,4 +443,8 @@
 
 .el-table__body-wrapper {
   overflow-y: auto;
+}
+
+.multiselect--active {
+  z-index: 1000 !important;
 }

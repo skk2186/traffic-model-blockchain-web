@@ -1,10 +1,14 @@
 <template>
   <div class="app-container">
+    <div class="business-page-header">
+      <h2>可信共享记录</h2>
+      <p>链上交易记录用于交通数据资产调用、共享行为存证和审计，底层交易哈希、方法和参数保持原始含义。</p>
+    </div>
     <el-row :gutter="10">
       <el-col :span="6">
         <el-card style="height: 80vh">
           <div slot="header">
-            <span>导航</span>
+            <span>协同网络导航</span>
             <el-tooltip id="transactionHelp" effect="light" content="如何使用？" placement="top">
               <el-button type="text" size="mini" style="margin-left: 10px;padding: 0px" @click="howToUseTransaction">
                 <svg-icon style="vertical-align: 0px" icon-class="question" />
@@ -19,15 +23,15 @@
       <el-col :span="18">
         <el-card style="height: 80vh">
           <div slot="header">
-            <span>交易列表</span>
+            <span>可信共享记录列表</span>
             <div style="float: right; margin-top: -10px">
-              <el-input v-model="currentChain" style="width: 30vw" placeholder="当前路径" prefix-icon="el-icon-folder" readonly>
+              <el-input v-model="currentChain" style="width: 30vw" placeholder="当前协同网络标识" prefix-icon="el-icon-folder" readonly>
                 <template slot="prepend">
                   <el-button icon="el-icon-refresh" size="mini" @click="handleSearch" />
                 </template>
               </el-input>
               <el-button id="sendTransaction" icon="el-icon-notebook-2" style="margin-left: 10px" type="primary" @click="handleSendTransaction">
-                发交易
+                发起可信共享
               </el-button>
             </div>
           </div>

@@ -15,7 +15,7 @@
           {{ item.row.txHash }}
         </template>
       </el-table-column>
-      <el-table-column label="跨链账户" min-width="30px" show-overflow-tooltip>
+      <el-table-column label="调用方链上身份" min-width="30px" show-overflow-tooltip>
         <template slot-scope="item">
           <div v-if="item.row.username === 'unknown'">
             <el-popover trigger="hover" placement="top">
@@ -32,7 +32,7 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="事务ID" min-width="30px" show-overflow-tooltip>
+      <el-table-column label="跨域协同任务ID" min-width="30px" show-overflow-tooltip>
         <template slot-scope="item">
           <div v-if="item.row.txID === 'unknown'">
             <el-popover trigger="hover" placement="top">
@@ -64,7 +64,7 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="资源路径" min-width="50px" show-overflow-tooltip>
+      <el-table-column label="目标资产可信标识" min-width="50px" show-overflow-tooltip>
         <template slot-scope="item">
           <div v-if="item.row.path === 'unknown'">
             <el-popover trigger="hover" placement="top">
@@ -103,7 +103,7 @@
             trigger="click"
           >
             <div class="el-popover__title">
-              交易回执详情
+              可信共享回执详情
               <clipboard :input-data="JSON.stringify(txReceipt)" style="float:right;" />
             </div>
             <div class="json_css">
@@ -119,7 +119,7 @@
             <el-tooltip
               slot="reference"
               effect="light"
-              content="点击查看交易回执详情"
+              content="点击查看可信共享回执详情"
               placement="top"
             >
               <el-button
@@ -402,14 +402,14 @@ export default {
       })
         .then((resp) => {
           if (typeof resp.errorCode === 'undefined' || resp.errorCode !== 0) {
-            handleErrorMsgBox('查询交易列表失败, 请手动刷新后再尝试, 详情: ', '错误', JSON.stringify(resp), null)
+            handleErrorMsgBox('查询可信共享记录失败, 请手动刷新后再尝试, 详情: ', '错误', JSON.stringify(resp), null)
             this.buttonState.loading = false
             return
           }
           if (resp.data.transactions.length === 0 && resp.data.transactionWithDetails === 0) {
             this.$message({
               type: 'info',
-              message: '交易列表为空，已查询至数据末尾'
+              message: '可信共享记录为空，已查询至数据末尾'
             })
             this.updateButtonStatus()
             return
@@ -459,7 +459,7 @@ export default {
                 if (response.length === 0) {
                   this.$message({
                     type: 'info',
-                    message: '交易列表为空，已查询至数据末尾'
+                    message: '可信共享记录为空，已查询至数据末尾'
                   })
                   this.updateButtonStatus()
                   return

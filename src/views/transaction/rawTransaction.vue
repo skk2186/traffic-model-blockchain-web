@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-card>
       <template slot="header">
-        <el-page-header content="交易发起页面" title="交易管理" @back="() => {$router.push({ path: 'transactionList' })}" />
+        <el-page-header content="发起可信共享" title="可信共享记录" @back="() => {$router.push({ path: 'transactionList' })}" />
       </template>
       <el-row type="flex" justify="center" style="margin-top: 20px">
         <el-col :span="12">
@@ -14,13 +14,13 @@
             @submitClick="onSubmit"
           >
             <template slot="path">
-              <el-input v-model="transactionData.path" placeholder="请输入资源路径" readonly style="width: calc(100% - 63px)">
+              <el-input v-model="transactionData.path" placeholder="请选择资产可信标识" readonly style="width: calc(100% - 63px)">
                 <el-button slot="append" icon="el-icon-search" @click="onClickSerch">浏览</el-button>
               </el-input>
               <el-dialog :visible.sync="startSelectPath">
                 <div class="wl-finder">
                   <el-row class="finder-title">
-                    <span style="margin-left: 10px">待选资源列表</span>
+                    <span style="margin-left: 10px">待选可信数据资产</span>
                   </el-row>
                   <el-row :style="{height}">
                     <el-col>
@@ -188,7 +188,7 @@ export default {
         } else {
           this.$message({
             type: 'error',
-            message: '查询资源列表失败, errorCode: ' + response.errorCode
+            message: '查询可信数据资产失败, errorCode: ' + response.errorCode
           })
         }
       }).catch((error) => {

@@ -1,9 +1,13 @@
 <template>
   <transition name="el-fade-in-linear">
     <div v-show="show" class="app-container">
+      <div class="business-page-header">
+        <h2>链上身份管理</h2>
+        <p>管理参与方在数据共享和跨域协同中的链上操作身份，默认账户将用于发起资源调用和跨链事务。</p>
+      </div>
       <el-card>
         <div slot="header">
-          <span>跨链账户信息</span>
+          <span>链上身份信息</span>
           <el-tooltip id="accountHelp" effect="light" content="如何使用？" placement="top">
             <el-button type="text" size="mini" style="margin-left: 10px;padding: 0px" @click="howToUse">
               <svg-icon style="vertical-align: 0px" icon-class="question" />
@@ -11,9 +15,9 @@
           </el-tooltip>
         </div>
         <el-form label-position="left" size="small" label-width="80px">
-          <el-form-item label="跨链账户：">
+          <el-form-item label="参与方身份：">
             <el-tag id="UA" :type="ua.admin ? 'warning': 'success'"><span>{{ ua.username }}</span></el-tag>
-            <el-button id="addChainAccount" style="float: right" type="primary" @click="addChainAccountDrawer.show=true">添加链账户</el-button>
+            <el-button id="addChainAccount" style="float: right" type="primary" @click="addChainAccountDrawer.show=true">新增链上身份</el-button>
           </el-form-item>
           <el-form-item id="uaPK" label="公钥信息：">
             <el-input v-model="ua.pubKey" type="text" readonly autosize resize="none">
@@ -33,17 +37,17 @@
           @row-click="showChainAccount"
         >
           <el-table-column label="" width="30px" />
-          <el-table-column prop="type" label="链账户类型" width="180">
+          <el-table-column prop="type" label="底层链账户类型" width="180">
             <template slot-scope="scope">
               <el-tag type="info">{{ scope.row.type }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="keyID" label="链账户ID" width="180">
+          <el-table-column prop="keyID" label="链上身份ID" width="180">
             <template slot-scope="scope">
               <div>{{ scope.row.keyID }}</div>
             </template>
           </el-table-column>
-          <el-table-column prop="details" label="摘要" @click="showChainAccount(scope.row)">
+          <el-table-column prop="details" label="身份摘要" @click="showChainAccount(scope.row)">
             <template slot-scope="scope">
               <el-tooltip effect="light" content="点击查看详情" placement="top">
                 <div>{{ scope.row.details }}</div>
@@ -59,7 +63,7 @@
                 size="small"
                 @click.stop=""
               >
-                默认账户
+                默认操作身份
               </el-button>
               <el-button
                 v-else
@@ -68,7 +72,7 @@
                 size="small"
                 @click.stop="querySetDefaultAccountByColumn(scope.row)"
               >
-                设为默认
+                设为默认身份
               </el-button>
             </template>
           </el-table-column>
@@ -82,14 +86,14 @@
       >
         <el-card style="height:100%">
           <div slot="header" class="clearfix">
-            <span> 链账户 </span>
+            <span> 链上身份详情 </span>
             <i class="el-icon-close" style="float:right;cursor:pointer" @click="chainAccountDrawer.show = false" />
           </div>
           <el-form label-position="top" size="small" label-width="80px">
             <el-form-item label="KeyID">
               <span>{{ chainAccountDrawer.info.keyID }}</span>
             </el-form-item>
-            <el-form-item label="链账户类型">
+            <el-form-item label="底层链账户类型">
               <el-tag type="info">{{ chainAccountDrawer.info.type }}</el-tag>
             </el-form-item>
             <el-form-item>
@@ -120,11 +124,11 @@
               v-if="!chainAccountDrawer.info.isDefault"
               type="primary"
               @click="querySetDefaultAccount()"
-            >设为默认</el-button>
+            >设为默认身份</el-button>
             <el-button
               type="danger"
               @click="queryRemoveChainAccount()"
-            >删除</el-button>
+            >删除身份</el-button>
           </el-row>
         </el-card>
       </el-drawer>
@@ -136,16 +140,16 @@
       >
         <el-card style="height:100%">
           <div slot="header" class="clearfix">
-            <span> 添加链账户 </span>
+            <span> 新增链上身份 </span>
             <i class="el-icon-close" style="float:right;cursor:pointer" @click="addChainAccountDrawer.show = false" />
           </div>
           <el-form ref="addChainAccountDrawer" label-position="top" size="small" :rules="addChainAccountDrawerRules" :model="addChainAccountDrawer.params">
             <el-form-item prop="type">
-              <label><div><span>链账户类型</span></div></label>
+              <label><div><span>底层链账户类型</span></div></label>
               <el-select
                 v-model="addChainAccountDrawer.params.type"
                 style="width:200px;margin-top:10px"
-                placeholder="请选择链账户类型"
+                placeholder="请选择底层链账户类型"
                 @change="clearChainAccountDrawerParams()"
               >
                 <el-option label="FISCO BCOS 2.0" value="BCOS2.0" />
@@ -523,7 +527,7 @@
             </div>
 
             <el-form-item v-if="addChainAccountDrawer.params.type">
-              <label><div><span>设为默认账户</span></div></label>
+              <label><div><span>设为默认操作身份</span></div></label>
               <el-switch v-model="addChainAccountDrawer.params.isDefault" style="margin-top:10px" />
             </el-form-item>
           </el-form>
@@ -532,7 +536,7 @@
               style="float: right;"
               type="primary"
               @click="queryAddChainAccount('addChainAccountDrawer')"
-            >确认</el-button>
+            >确认新增</el-button>
           </div>
         </el-card>
       </el-drawer>
@@ -674,7 +678,7 @@ export default {
       }
     },
     querySetDefaultAccount() {
-      this.$confirm('设为默认账户？', '提示', {
+      this.$confirm('设为默认链上操作身份？', '提示', {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         type: 'warning'
@@ -716,7 +720,7 @@ export default {
     queryAddChainAccount(formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          this.$confirm('添加链账户？', '提示', {
+          this.$confirm('新增链上身份？', '提示', {
             confirmButtonText: '确认',
             cancelButtonText: '取消',
             type: 'warning'
@@ -749,7 +753,7 @@ export default {
       })
     },
     queryRemoveChainAccount() {
-      this.$confirm('删除链账户？', '提示', {
+      this.$confirm('删除链上身份？', '提示', {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         type: 'warning'
@@ -882,24 +886,24 @@ export default {
         steps: [
           {
             element: '#UA',
-            title: '跨链账户',
-            intro: '展示跨链账户名',
+            title: '链上身份',
+            intro: '展示当前参与方在平台中的链上操作身份',
             position: 'right'
           }, {
             element: '#uaPK',
-            title: '跨链账户公钥',
-            intro: '展示跨链账户的公钥信息',
+            title: '链上身份公钥',
+            intro: '展示链上操作身份的公钥信息',
             position: 'top'
           }, {
             element: '#chainAccountTable',
-            title: '链账户信息',
-            intro: '展示跨链账户的所有链账户信息，可点击表行查看详细信息<br>也可展开某种链账户类型,设置默认链账户',
+            title: '链上身份信息',
+            intro: '展示参与方的底层链账户信息，可点击表行查看详细信息<br>也可展开某种链账户类型，设置默认操作身份',
             position: 'top'
           },
           {
             element: '#addChainAccount',
-            title: '添加链账户',
-            intro: '点击"添加链账户"按钮进行链账户添加操作',
+            title: '新增链上身份',
+            intro: '点击"新增链上身份"按钮，为数据共享和跨域协同配置链上操作身份',
             position: 'left'
           }
         ]

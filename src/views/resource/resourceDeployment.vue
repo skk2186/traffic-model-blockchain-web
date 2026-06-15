@@ -2,10 +2,10 @@
   <div class="app-container">
     <el-card>
       <template slot="header">
-        <el-page-header content="资源部署页面" title="资源管理" @back="() => {$router.push({ path: 'resourceList' })}">
+        <el-page-header content="数据资产登记" title="交通数据资产" @back="() => {$router.push({ path: 'resourceList' })}">
           <div slot="content">
-            <span style="color: #303133;font-size: 16px">资源部署页面</span>
-            <el-tooltip id="deployHelp" effect="light" content="如何部署资源？" placement="top">
+            <span style="color: #EAF6FF;font-size: 16px">数据资产登记</span>
+            <el-tooltip id="deployHelp" effect="light" content="如何登记数据资产？" placement="top">
               <el-button type="text" size="mini" style="margin-left: 10px;padding: 0px" @click="howToUse">
                 <svg-icon style="vertical-align: 0px" icon-class="question" />
               </el-button>
@@ -66,7 +66,7 @@
             <div id="Path">
               <el-form-item
                 v-if="form.prependPath !== null"
-                label="资源路径："
+                label="资产可信标识："
                 prop="appendPath"
               >
                 <el-input v-model.trim="form.appendPath" placeholder="Path">
@@ -76,7 +76,7 @@
 
               <el-form-item
                 v-else
-                label="资源路径："
+                label="资产可信标识："
                 prop="fullPath"
               >
                 <el-input v-model.trim="form.fullPath" placeholder="Path" />
@@ -578,7 +578,7 @@ export default {
             message: h('div', null, [
               h('p', null, '已执行成功，返回信息：'),
               h('p', null, response.data),
-              h('p', { style: 'font-weight: bold;' }, '注意: 必须实例化合约/升级合约才能在资源列表显示')
+              h('p', { style: 'font-weight: bold;' }, '注意: 必须实例化合约/升级合约才能在可信数据资产列表显示')
             ]),
             title: '执行成功',
             confirmButtonText: '实例化合约',
@@ -667,7 +667,7 @@ export default {
         response.data,
         {
           showCancelButton: true,
-          confirmButtonText: '前往资源列表',
+          confirmButtonText: '前往资产列表',
           cancelButtonText: '继续部署'
         }
       ).then(_ => {

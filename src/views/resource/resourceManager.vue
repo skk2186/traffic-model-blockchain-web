@@ -1,10 +1,14 @@
 <template>
   <div class="app-container">
+    <div class="business-page-header">
+      <h2>交通数据资产</h2>
+      <p>统一查看和调用可信数据资产。页面中的底层对象仍是智能合约、Chaincode 或跨链资源，不等同于原始数据文件。</p>
+    </div>
     <el-row :gutter="10">
       <el-col :span="6">
         <el-card style="height: 80vh;">
           <div slot="header">
-            <span>导航</span>
+            <span>协同网络导航</span>
             <el-tooltip id="resourceHelp" effect="light" content="如何使用？" placement="top">
               <el-button type="text" size="mini" style="margin-left: 10px;padding: 0px" @click="howToUseResource">
                 <svg-icon style="vertical-align: 0px" icon-class="question" />
@@ -19,14 +23,14 @@
       <el-col :span="18">
         <el-card style="height: 80vh">
           <div slot="header">
-            <span>资源列表</span>
+            <span>可信数据资产列表</span>
             <div style="float: right; margin-top: -10px">
-              <el-input v-model="currentChain" style="width: 30vw;" placeholder="当前路径" prefix-icon="el-icon-folder" readonly>
+              <el-input v-model="currentChain" style="width: 30vw;" placeholder="当前协同网络标识" prefix-icon="el-icon-folder" readonly>
                 <template slot="prepend">
                   <el-button icon="el-icon-refresh" size="mini" @click="() => {if(typeof currentChain !== 'undefined'){$refs['ResourceExplorer'].refresh()}}" />
                 </template>
               </el-input>
-              <el-button id="resourceDeploy" icon="el-icon-upload" type="primary" style="margin-left: 10px;" @click="onDeploy">部署资源</el-button>
+              <el-button id="resourceDeploy" icon="el-icon-upload" type="primary" style="margin-left: 10px;" @click="onDeploy">登记数据资产</el-button>
             </div>
           </div>
           <ResourceExplorer id="ResourceExplorer" ref="ResourceExplorer" :chain="currentChain" :page-size="10" style="height: calc(80vh - 90px)" />
