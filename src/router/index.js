@@ -77,7 +77,7 @@ export const asyncRoutes = [
         path: 'routerManager',
         component: () => import('@/views/router/routerManager'),
         meta: {
-          title: '路由管理',
+          title: '节点管理',
           icon: 'el-icon-connection',
           roles: ['admin', 'user']
         }
@@ -87,7 +87,7 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/router/routerGuide'),
         meta: {
-          title: '路由部署',
+          title: '节点接入',
           icon: 'el-icon-upload',
           roles: ['admin', 'user']
         }
@@ -105,7 +105,7 @@ export const asyncRoutes = [
         path: 'resourceList',
         component: () => import('@/views/resource/resourceManager'),
         meta: {
-          title: '资源管理',
+          title: '数据资产',
           icon: 'el-icon-files',
           roles: ['admin', 'user']
         }
@@ -116,7 +116,7 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/resource/resourceDeployment'),
         meta: {
-          title: '资源部署',
+          title: '资产登记',
           icon: 'el-icon-upload',
           activeMenu: '/resource/resourceList',
           roles: ['admin', 'user']
@@ -135,7 +135,7 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/transaction/rawTransaction'),
         meta: {
-          title: '交易发起',
+          title: '发起共享',
           icon: 'el-icon-s-opportunity',
           activeMenu: '/transaction/transactionList',
           roles: ['admin', 'user']
@@ -146,7 +146,7 @@ export const asyncRoutes = [
         name: 'TransactionList',
         component: () => import('@/views/transaction/transactionManager'),
         meta: {
-          title: '交易管理',
+          title: '共享审计',
           icon: 'el-icon-sort',
           roles: ['admin', 'user']
         }
@@ -165,7 +165,7 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/transaction/xaTransaction'),
         meta: {
-          title: '事务交易',
+          title: '发起协同',
           icon: 'el-icon-s-order',
           activeMenu: '/xaTransaction/xaTransactionList',
           roles: ['admin', 'user']
@@ -176,7 +176,7 @@ export const asyncRoutes = [
         path: 'xaTransactionList',
         component: () => import('@/views/transaction/xaTransactionList'),
         meta: {
-          title: '事务管理',
+          title: '跨域协同',
           icon: 'el-icon-finished',
           roles: ['admin', 'user']
         }
@@ -199,23 +199,23 @@ export const asyncRoutes = [
       }
     }]
   },
-  {
-    path: '/documents',
-    component: Layout,
-    name: 'Documents',
-    redirect: '/documents/index',
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/document/index'),
-        meta: {
-          title: '参考文档',
-          icon: 'el-icon-document',
-          roles: ['admin', 'user']
-        }
-      }
-    ]
-  },
+  // {
+  //   path: '/documents',
+  //   component: Layout,
+  //   name: 'Documents',
+  //   redirect: '/documents/index',
+  //   children: [
+  //     {
+  //       path: 'index',
+  //       component: () => import('@/views/document/index'),
+  //       meta: {
+  //         title: '参考文档',
+  //         icon: 'el-icon-document',
+  //         roles: ['admin', 'user']
+  //       }
+  //     }
+  //   ]
+  // },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

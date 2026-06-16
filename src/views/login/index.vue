@@ -9,11 +9,11 @@
       label-position="left"
     >
       <div class="title-container">
-        <h3 class="title">欢迎登录 WeCross</h3>
+        <h3 class="title">欢迎登录 交通可信协同平台</h3>
       </div>
 
       <el-row :gutter="20">
-        <el-col :span="17">
+        <el-col>
           <el-form-item prop="username">
             <span class="svg-container">
               <svg-icon icon-class="user" />
@@ -26,7 +26,7 @@
             />
           </el-form-item>
         </el-col>
-        <el-col style="float: right; margin-right: 2px" :span="6">
+        <!-- <el-col style="float: right; margin-right: 2px" :span="6">
           <div
             style="
               margin-top: 2px;
@@ -41,7 +41,7 @@
               <el-option label="普通用户" value="false" />
             </el-select>
           </div>
-        </el-col>
+        </el-col> -->
       </el-row>
 
       <el-form-item prop="password">

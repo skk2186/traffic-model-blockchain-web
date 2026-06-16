@@ -9,7 +9,7 @@
       label-position="left"
     >
       <div class="title-container">
-        <h3 class="title">欢迎注册 WeCross</h3>
+        <h3 class="title">欢迎注册 交通可信协同平台</h3>
       </div>
 
       <el-tooltip placement="right">

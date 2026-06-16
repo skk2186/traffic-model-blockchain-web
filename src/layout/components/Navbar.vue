@@ -10,11 +10,11 @@
 
     <div class="right-menu" style="margin-right:20px">
       <el-dropdown id="issue" trigger="click" class="right-menu-item hover-effect">
-        <el-tooltip effect="light" content="加鸡腿" placement="bottom">
+        <!-- <el-tooltip effect="light" content="加鸡腿" placement="bottom">
           <el-button circle effect="light" size="mini">
             <svg-icon icon-class="chicken" />
           </el-button>
-        </el-tooltip>
+        </el-tooltip> -->
         <el-dropdown-menu slot="dropdown">
           <body
             :background="qrCodeShow ? undefined : require('@/assets/issue.png')"

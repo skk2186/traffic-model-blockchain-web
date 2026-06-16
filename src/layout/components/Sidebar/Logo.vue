@@ -14,8 +14,8 @@ export default {
   name: 'SidebarLogo',
   data() {
     return {
-      title: 'WeCross管理平台',
-      logo: require('@/assets/nav-logo.svg')
+      title: '交通可信协同平台',
+      logo: require('@/assets/GUET-logo.svg')
     }
   }
 }
