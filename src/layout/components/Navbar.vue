@@ -15,7 +15,7 @@
             <svg-icon icon-class="chicken" />
           </el-button>
         </el-tooltip> -->
-        <el-dropdown-menu slot="dropdown">
+        <!-- <el-dropdown-menu slot="dropdown">
           <body
             :background="qrCodeShow ? undefined : require('@/assets/issue.png')"
             style="text-align:center;background-size:cover;background-position-y:center;width:860px;height:550px;cursor:pointer"
@@ -96,9 +96,9 @@
               </el-button-group></el-footer>
             </el-container>
           </body>
-        </el-dropdown-menu>
+        </el-dropdown-menu> -->
       </el-dropdown>
-      <div class="right-menu-item hover-effect">
+      <!-- <div class="right-menu-item hover-effect">
         <el-tooltip effect="light" content="需要帮助？" placement="bottom">
           <el-button circle effect="light" size="mini" @click="() => {$emit('help')}">
             <span class="svg-container">
@@ -106,7 +106,7 @@
             </span>
           </el-button>
         </el-tooltip>
-      </div>
+      </div> -->
       <el-dropdown id="userAvatar" class="avatar-container right-menu-item hover-effect" trigger="click">
         <el-button round effect="light" size="mini">
           <span><i class="el-icon-user" />  |  {{ loginUser }} </span>

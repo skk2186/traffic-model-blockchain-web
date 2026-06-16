@@ -49,7 +49,7 @@
           <div slot="header" class="table-header">
             <div>
               <h2>可信协同网络</h2>
-              <p>展示当前接入的区块链网络与可信账本状态。</p>
+              <p>展示当前接入的区块链网络与可信账本状态</p>
             </div>
             <el-button icon="el-icon-refresh-left" type="text" @click="refreshChainsInfo">刷新</el-button>
           </div>
@@ -112,7 +112,7 @@
           <div slot="header" class="table-header">
             <div>
               <h2>基础设施状态</h2>
-              <p>首页仅保留摘要，详细信息可折叠查看。</p>
+              <p>首页仅保留摘要，详细信息可折叠查看</p>
             </div>
             <el-button
               icon="el-icon-refresh-left"
@@ -531,9 +531,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.homepage {
-  background: #f5f7fb;
-}
+// .homepage {
+//   background: #f5f7fb;
+// }
 
 .section {
   margin-top: 16px;
@@ -543,8 +543,9 @@ export default {
 .metric-card,
 .network-card,
 .infra-card {
-  border: 1px solid #e6ebf2;
-  border-radius: 6px;
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
 }
 
 .intro-row {
@@ -582,8 +583,9 @@ export default {
   min-height: 82px;
   padding: 16px 18px;
   background: #f8fafc;
-  border: 1px solid #e5eaf0;
-  border-radius: 6px;
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
 }
 
 .status-title {

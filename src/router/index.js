@@ -49,7 +49,7 @@ export const asyncRoutes = [
         name: 'AccountManager',
         component: () => import('@/views/account/index'),
         meta: {
-          title: '账户管理',
+          title: '身份凭证',
           icon: 'el-icon-user',
           roles: ['admin', 'user']
         }
