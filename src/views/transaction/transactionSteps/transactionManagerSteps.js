@@ -1,20 +1,14 @@
 export const transactionManagerSteps = [
   {
     element: '#ChainExplorer',
-    title: '1. 导航选择',
-    intro: '第一步：从zone-chain导航中选择对应的链',
+    title: '1. 选择协同网络',
+    intro: '从左侧协同网络中选择需要审计的链网络。',
     position: 'right'
   },
   {
     element: '#TransactionListExplorer',
-    title: '2. 交易列表展示',
-    intro: '第二步：选择好对应的链之后，就会在资源列表中展示这条链中所有交易',
-    position: 'left'
-  },
-  {
-    element: '#sendTransaction',
-    title: '发起交易',
-    intro: '若需要发起跨链交易，请点击"发交易"按钮',
+    title: '2. 查看共享审计记录',
+    intro: '选择链网络后，可查看其中的数据调用记录、操作主体与链上执行凭证。',
     position: 'left'
   }
 ]

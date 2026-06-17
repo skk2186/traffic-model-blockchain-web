@@ -20,17 +20,17 @@
         height="100%"
         tooltip-effect="light"
       >
-        <el-table-column label="数据资产标识" min-width="180" show-overflow-tooltip>
+        <el-table-column label="数据资产标识" show-overflow-tooltip>
           <template slot-scope="scope">
             <span class="resource-path">{{ scope.row.path }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="链适配类型" min-width="130" show-overflow-tooltip>
+        <el-table-column label="链适配类型" width="116" show-overflow-tooltip>
           <template slot-scope="scope">
             <el-tag type="info" class="resource-type-tag">{{ scope.row.stubType }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="链上元数据" min-width="180" show-overflow-tooltip>
+        <el-table-column label="链上元数据" show-overflow-tooltip>
           <template slot-scope="scope">
             <div class="metadata-cell">
               <clipboard :input-data="JSON.stringify(scope.row.properties)" />
@@ -38,7 +38,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220">
+        <el-table-column label="操作" width="196" align="center">
           <template slot-scope="scope">
             <div class="resource-actions">
               <el-button
@@ -311,11 +311,24 @@ export default {
 }
 
 .resource-table::v-deep .cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   line-height: 32px;
+}
+
+.resource-table::v-deep .is-center .cell {
+  justify-content: center;
+}
+
+.resource-table::v-deep .el-table__body-wrapper {
+  overflow-x: hidden;
 }
 
 .resource-path {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-align: left;
   text-overflow: ellipsis;
@@ -324,7 +337,7 @@ export default {
 
 .resource-type-tag {
   display: inline-block;
-  max-width: 180px;
+  max-width: 96px;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
@@ -336,6 +349,7 @@ export default {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .metadata-cell::v-deep > div {
@@ -355,6 +369,7 @@ export default {
 .metadata-cell__text {
   display: block;
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -364,7 +379,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
 }
 
