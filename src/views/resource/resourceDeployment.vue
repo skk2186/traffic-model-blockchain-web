@@ -1,272 +1,301 @@
 <template>
-  <div class="app-container">
+  <div class="app-container resource-deployment">
     <el-card>
       <template slot="header">
-        <el-page-header content="资源部署页面" title="资源管理" @back="() => {$router.push({ path: 'resourceList' })}">
-          <div slot="content">
-            <span style="color: #303133;font-size: 16px">资源部署页面</span>
-            <el-tooltip id="deployHelp" effect="light" content="如何部署资源？" placement="top">
-              <el-button type="text" size="mini" style="margin-left: 10px;padding: 0px" @click="howToUse">
+        <el-page-header title="返回数据资产目录" @back="() => {$router.push({ path: 'resourceList' })}">
+          <div slot="content" class="resource-deployment__header">
+            <div>
+              <h2>数据资产链上登记</h2>
+              <p>将交通数据服务对应的合约或链码登记到指定协同网络</p>
+            </div>
+            <!-- <el-tooltip id="deployHelp" effect="light" content="如何登记数据资产？" placement="top">
+              <el-button type="text" size="mini" class="resource-deployment__help" @click="howToUse">
                 <svg-icon style="vertical-align: 0px" icon-class="question" />
               </el-button>
-            </el-tooltip>
+            </el-tooltip> -->
           </div>
         </el-page-header>
       </template>
       <el-row>
-        <el-col :span="18" :offset="2">
-          <el-form ref="deployForm" :model="form" label-width="120px" :rules="formRules">
-            <el-form-item id="stubType" label="选择链类型：" prop="stubType">
-              <el-select v-model="form.stubType" :disabled="lockDown" placeholder="请选择部署的链类型" style="width:100%" @change="stubTypeChange">
-                <el-option-group label="FISCO BCOS">
-                  <el-option label="FISCO BCOS 2.0" value="BCOS2.0" />
-                  <el-option label="FISCO BCOS 2.0 国密版" value="GM_BCOS2.0" />
-                  <el-option label="FISCO BCOS 3.0 EVM" value="BCOS3_ECDSA_EVM" />
-                  <el-option label="FISCO BCOS 3.0 EVM 国密版" value="BCOS3_GM_EVM" />
-                  <el-option label="FISCO BCOS 3.0 WASM" value="BCOS3_ECDSA_WASM" />
-                  <el-option label="FISCO BCOS 3.0 WASM 国密版" value="BCOS3_GM_WASM" />
-                </el-option-group>
-                <el-option-group label="Hyperledger Fabric">
-                  <el-option label="Hyperledger Fabric 1.4" value="Fabric1.4" />
-                </el-option-group>
-              </el-select>
-            </el-form-item>
-            <el-form-item id="method" label="选择操作：" prop="method">
-              <el-select key="methodSelect" v-model="form.method" placeholder="选择操作类型" @change="methodChange">
-                <el-option
-                  v-if="(form.stubType !== null && form.stubType.includes('BCOS'))"
-                  label="部署合约"
-                  value="deploy"
-                >
-                  <span style="float: left">部署合约</span>
-                  <span style="float: right; color: #8492a6; font-size: 13px">Deploy</span>
-                </el-option>
-                <el-option
-                  v-if="(form.stubType !== null && form.stubType.includes('BCOS'))"
-                  label="注册已有合约"
-                  value="register"
-                >
-                  <span style="float: left">注册已有合约</span>
-                  <span style="float: right; color: #8492a6; font-size: 13px">Register</span>
-                </el-option>
-                <el-option v-if="form.stubType ==='Fabric1.4'" label="安装合约" value="install">
-                  <span style="float: left">安装合约</span>
-                  <span style="float: right; color: #8492a6; font-size: 13px">Install</span>
-                </el-option>
-                <el-option v-if="form.stubType ==='Fabric1.4'" label="实例化合约" value="instantiate">
-                  <span style="float: left">实例化合约</span>
-                  <span style="float: right; color: #8492a6; font-size: 13px">Instantiate</span>
-                </el-option>
-                <el-option v-if="form.stubType ==='Fabric1.4'" label="升级合约" value="upgrade">
-                  <span style="float: left">升级合约</span>
-                  <span style="float: right; color: #8492a6; font-size: 13px">Upgrade</span>
-                </el-option>
-              </el-select>
-            </el-form-item>
-            <div id="Path">
-              <el-form-item
-                v-if="form.prependPath !== null"
-                label="资源路径："
-                prop="appendPath"
-              >
-                <el-input v-model.trim="form.appendPath" placeholder="Path">
-                  <template slot="prepend" style="padding: 5px">{{ form.prependPath }}</template>
-                </el-input>
-              </el-form-item>
-
-              <el-form-item
-                v-else
-                label="资源路径："
-                prop="fullPath"
-              >
-                <el-input v-model.trim="form.fullPath" placeholder="Path" />
-              </el-form-item>
-            </div>
-
-            <!-- BCOS -->
-            <div v-if="(form.stubType !== null && form.stubType.includes('BCOS'))">
-              <el-row
-                v-if="(form.stubType !== null && !form.stubType.includes('WASM'))"
-                type="flex"
-              >
-                <el-form-item id="zipContract" label="上传文件：" prop="zipContract">
-                  <el-upload
-                    ref="uploadContract"
-                    action=""
-                    accept=".zip"
-                    :file-list="fileList"
-                    :on-change="changeContractFile"
-                    :before-remove="beforeRemove"
-                    :http-request="uploadContractSourceHandler"
-                    :auto-upload="false"
-                  >
-                    <div slot="tip" class="el-upload__tip">
-                      只能上传合约文件打包的zip文件<br>
-                      注意：zip打包最外层必须有合约入口文件
-                    </div>
-                    <el-button slot="trigger">选取文件</el-button>
-                  </el-upload>
-                </el-form-item>
-                <el-form-item id="chosenSolidity" label="合约入口文件：" prop="chosenSolidity">
-                  <el-select v-model="form.chosenSolidity" placeholder="选择编译的合约文件">
-                    <el-option
-                      v-for="item in solidityFiles"
-                      :key="item.path"
-                      :label="item.path"
-                      :value="item.value"
-                    />
+        <el-col :span="24">
+          <div class="resource-deployment__form-wrap">
+            <!-- <el-steps class="resource-deployment__steps" :active="2" simple>
+              <el-step title="链环境" />
+              <el-step title="资产服务配置" />
+              <el-step title="提交登记" />
+            </el-steps> -->
+            <el-form ref="deployForm" :model="form" label-width="160px" :rules="formRules" class="resource-deploy-form">
+              <section class="deploy-section">
+                <div class="deploy-section__title">链环境</div>
+                <el-form-item id="stubType" label="底层链环境：" prop="stubType">
+                  <el-select v-model="form.stubType" :disabled="lockDown" placeholder="请选择底层链环境" @change="stubTypeChange">
+                    <el-option-group label="FISCO BCOS">
+                      <!-- <el-option label="FISCO BCOS 2.0" value="BCOS2.0" /> -->
+                      <!-- <el-option label="FISCO BCOS 2.0 国密版" value="GM_BCOS2.0" /> -->
+                      <el-option label="FISCO BCOS 3.0 EVM" value="BCOS3_ECDSA_EVM" />
+                      <!-- <el-option label="FISCO BCOS 3.0 EVM 国密版" value="BCOS3_GM_EVM" /> -->
+                      <!-- <el-option label="FISCO BCOS 3.0 WASM" value="BCOS3_ECDSA_WASM" /> -->
+                      <!-- <el-option label="FISCO BCOS 3.0 WASM 国密版" value="BCOS3_GM_WASM" /> -->
+                    </el-option-group>
+                    <el-option-group label="Hyperledger Fabric">
+                      <el-option label="Hyperledger Fabric 1.4" value="Fabric1.4" />
+                    </el-option-group>
                   </el-select>
                 </el-form-item>
-              </el-row>
-              <el-row
-                v-if="(form.stubType !== null && form.stubType.includes('WASM'))"
-                type="flex"
-              >
-                <el-form-item id="wasmContract" label="上传文件：" prop="zipContract">
-                  <el-upload
-                    ref="uploadContract"
-                    action=""
-                    accept=".wasm,.abi"
-                    :file-list="fileList"
-                    :on-change="changeWasmContractFile"
-                    :before-remove="beforeRemove"
-                    :http-request="uploadWasmContractHandler"
-                    :auto-upload="false"
-                  >
-                    <div slot="tip" class="el-upload__tip">
-                      只能上传Liquid合约编译后的WASM文件和ABI文件<br>
-                    </div>
-                    <el-button slot="trigger">选取文件</el-button>
-                  </el-upload>
+                <el-form-item id="method" label="登记方式：" prop="method">
+                  <el-select key="methodSelect" v-model="form.method" placeholder="请选择登记方式" @change="methodChange">
+                    <el-option
+                      v-if="(form.stubType !== null && form.stubType.includes('BCOS'))"
+                      label="登记新资产服务"
+                      value="deploy"
+                    >
+                      <span class="option-label">登记新资产服务</span>
+                      <span class="option-tech">Deploy</span>
+                    </el-option>
+                    <el-option
+                      v-if="(form.stubType !== null && form.stubType.includes('BCOS'))"
+                      label="接入已有资产服务"
+                      value="register"
+                    >
+                      <span class="option-label">接入已有资产服务</span>
+                      <span class="option-tech">Register</span>
+                    </el-option>
+                    <el-option v-if="form.stubType ==='Fabric1.4'" label="安装资产服务链码" value="install">
+                      <span class="option-label">安装资产服务链码</span>
+                      <span class="option-tech">Install</span>
+                    </el-option>
+                    <el-option v-if="form.stubType ==='Fabric1.4'" label="初始化资产服务链码" value="instantiate">
+                      <span class="option-label">初始化资产服务链码</span>
+                      <span class="option-tech">Instantiate</span>
+                    </el-option>
+                    <el-option v-if="form.stubType ==='Fabric1.4'" label="升级资产服务链码" value="upgrade">
+                      <span class="option-label">升级资产服务链码</span>
+                      <span class="option-tech">Upgrade</span>
+                    </el-option>
+                  </el-select>
                 </el-form-item>
-              </el-row>
-              <el-form-item
-                v-if="(form.stubType !== null && !form.stubType.includes('WASM'))"
-                id="className"
-                label="合约类名："
-                prop="className"
-              >
-                <el-input v-model.trim="form.className" placeholder="Class Name" />
-              </el-form-item>
-              <el-form-item
-                v-if="(form.stubType ==='BCOS2.0'||form.stubType ==='GM_BCOS2.0')"
-                id="bcosVersion"
-                label="合约版本号："
-                prop="version"
-              >
-                <el-input v-model.trim="form.version" placeholder="Version" />
-              </el-form-item>
-              <el-form-item
-                v-if="form.method ==='register'"
-                label="已有合约地址："
-                prop="address"
-              >
-                <el-input v-model.trim="form.address" placeholder="Address">
-                  <template slot="prepend">0x</template>
-                </el-input>
-              </el-form-item>
-            </div>
-            <!-- Fabric -->
-            <div v-else-if="form.stubType==='Fabric1.4'">
-              <el-form-item
-                v-if="form.method==='install'"
-                id="org"
-                label="所属机构名："
-                prop="org"
-              >
-                <el-tooltip effect="light" content="被安装链码的endorser所属的机构" placement="top">
-                  <el-input v-model="form.org" placeholder="Organization" />
-                </el-tooltip>
-              </el-form-item>
-              <el-form-item
-                v-if="form.method !=='install'"
-                id="orgs"
-                label="机构列表："
-                prop="org"
-              >
-                <el-tooltip effect="light" placement="top">
-                  <div slot="content">链码被安装的的机构列表 <br>注意：必须以JSON数组形式填入，例：["Org1"] </div>
-                  <el-input v-model="form.org" placeholder="Organizations" />
-                </el-tooltip>
-              </el-form-item>
-              <el-form-item v-if="form.method === 'install'" id="compressedContent" label="合约文件：" prop="compressedContent">
-                <el-upload
-                  ref="uploadChaincode"
-                  action=""
-                  :file-list="fileList"
-                  accept=".tar,.gz"
-                  :on-change="changeChaincodeFile"
-                  :before-remove="beforeRemove"
-                  :http-request="uploadContractCompressedHandler"
-                  :auto-upload="false"
-                >
-                  <div slot="tip" class="el-upload__tip">
-                    只能上传chaincode打包的tar/gz文件 <br>
-                    注意：Golang版本的链码必须将链码放在'src/chaincode/'的目录下在能正确安装
-                  </div>
-                  <el-button slot="trigger" size="mini">选取文件</el-button>
-                </el-upload>
-              </el-form-item>
-              <el-form-item
-                id="fabricVersion"
-                label="合约版本号："
-                prop="version"
-              >
-                <el-input v-model.trim="form.version" placeholder="Version" />
-              </el-form-item>
-              <el-form-item id="lang" label="合约语言：" prop="lang">
-                <el-select v-model="form.lang" placeholder="请选择合约语言" style="width:100%">
-                  <el-option label="Golang" value="GO_LANG" />
-                  <el-option label="Java" value="JAVA" />
-                </el-select>
-              </el-form-item>
-              <el-form-item
-                v-if="form.method==='instantiate'||form.method==='upgrade'"
-                id="policy"
-                label="背书策略："
-                prop="policy"
-              >
-                <el-upload
-                  ref="uploadPolicy"
-                  action=""
-                  accept=".yaml"
-                  :file-list="policyFile"
-                  :on-change="changePolicyFile"
-                  :before-remove="beforeRemove"
-                  :http-request="uploadPolicyHandler"
-                  :auto-upload="false"
-                >
-                  <div slot="tip" class="el-upload__tip">只能上传policy的yaml格式文件, 不上传默认为default</div>
-                  <el-button slot="trigger" size="mini">选取文件</el-button>
-                </el-upload>
-              </el-form-item>
-              <el-form-item
-                v-if="form.method==='instantiate'||form.method==='upgrade'"
-                id="args"
-                label="其他参数："
-                prop="args"
-              >
-                <el-tooltip effect="light" placement="top">
-                  <div slot="content">注意：必须以JSON数组形式填入，例：["a","10"]</div>
-                  <el-input v-model="form.args" placeholder="Arguments" />
-                </el-tooltip>
-              </el-form-item>
-            </div>
-            <el-form-item>
-              <el-button id="onSubmit" v-loading.fullscreen.lock="loading" type="primary" @click="onSubmit">执行</el-button>
-              <el-button @click="onCancel">重置表单</el-button>
-            </el-form-item>
-            <el-form-item>
-              <el-input
-                v-if="submitResponse !== null"
-                v-model="submitResponse"
-                autosize
-                type="textarea"
-                readonly
-                style="margin-bottom: 20px;width: 90%"
-              />
-            </el-form-item>
-          </el-form>
+                <div id="Path">
+                  <el-form-item
+                    v-if="form.prependPath !== null"
+                    label="数据资产标识："
+                    prop="appendPath"
+                  >
+                    <el-input v-model.trim="form.appendPath" class="asset-path-input" placeholder="请输入数据资产名称">
+                      <template slot="prepend">{{ form.prependPath }}</template>
+                    </el-input>
+                  </el-form-item>
+
+                  <el-form-item
+                    v-else
+                    label="数据资产标识："
+                    prop="fullPath"
+                  >
+                    <el-input v-model.trim="form.fullPath" placeholder="请输入数据资产名称" />
+                  </el-form-item>
+                </div>
+              </section>
+
+              <section class="deploy-section">
+                <div class="deploy-section__title">资产服务配置</div>
+                <div class="deploy-section__hint">此处登记的是交通数据服务对应的链上合约，不会将原始交通数据直接上传到区块链。</div>
+
+                <!-- BCOS -->
+                <div v-if="(form.stubType !== null && form.stubType.includes('BCOS'))">
+                  <el-row
+                    v-if="(form.stubType !== null && !form.stubType.includes('WASM'))"
+                    :gutter="16"
+                    class="upload-field-row"
+                  >
+                    <el-col :span="12">
+                      <el-form-item id="zipContract" label="合约文件包：" prop="zipContract">
+                        <el-upload
+                          ref="uploadContract"
+                          action=""
+                          accept=".zip"
+                          :file-list="fileList"
+                          :on-change="changeContractFile"
+                          :before-remove="beforeRemove"
+                          :http-request="uploadContractSourceHandler"
+                          :auto-upload="false"
+                        >
+                          <el-button slot="trigger">选择文件</el-button>
+                          <div slot="tip" class="el-upload__tip upload-tip-list">
+                            <p>请上传包含合约源码的 ZIP 文件</p>
+                            <p>ZIP 最外层目录中必须包含合约入口文件</p>
+                          </div>
+                        </el-upload>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item id="chosenSolidity" label="合约入口文件：" prop="chosenSolidity">
+                        <el-select v-model="form.chosenSolidity" placeholder="请选择合约入口文件">
+                          <el-option
+                            v-for="item in solidityFiles"
+                            :key="item.path"
+                            :label="item.path"
+                            :value="item.value"
+                          />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row
+                    v-if="(form.stubType !== null && form.stubType.includes('WASM'))"
+                    :gutter="16"
+                    class="upload-field-row"
+                  >
+                    <el-col :span="12">
+                      <el-form-item id="wasmContract" label="合约文件包：" prop="zipContract">
+                        <el-upload
+                          ref="uploadContract"
+                          action=""
+                          accept=".wasm,.abi"
+                          :file-list="fileList"
+                          :on-change="changeWasmContractFile"
+                          :before-remove="beforeRemove"
+                          :http-request="uploadWasmContractHandler"
+                          :auto-upload="false"
+                        >
+                          <el-button slot="trigger">选择文件</el-button>
+                          <div slot="tip" class="el-upload__tip">请上传 Liquid 合约编译后的 WASM 文件和 ABI 文件</div>
+                        </el-upload>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-form-item
+                    v-if="(form.stubType !== null && !form.stubType.includes('WASM'))"
+                    id="className"
+                    label="合约类名："
+                    prop="className"
+                  >
+                    <el-input v-model.trim="form.className" placeholder="请输入合约类名" />
+                  </el-form-item>
+                  <el-form-item
+                    v-if="(form.stubType ==='BCOS2.0'||form.stubType ==='GM_BCOS2.0')"
+                    id="bcosVersion"
+                    label="合约版本号："
+                    prop="version"
+                  >
+                    <el-input v-model.trim="form.version" placeholder="请输入合约版本号" />
+                  </el-form-item>
+                  <el-form-item
+                    v-if="form.method ==='register'"
+                    label="已有资产合约地址："
+                    prop="address"
+                  >
+                    <el-input v-model.trim="form.address" class="contract-address-input" placeholder="请输入已有合约地址">
+                      <template slot="prepend">0x</template>
+                    </el-input>
+                  </el-form-item>
+                </div>
+                <!-- Fabric -->
+                <div v-else-if="form.stubType==='Fabric1.4'">
+                  <el-form-item
+                    v-if="form.method==='install'"
+                    id="org"
+                    label="所属机构名："
+                    prop="org"
+                  >
+                    <el-tooltip effect="light" content="被安装链码的 endorser 所属的机构" placement="top">
+                      <el-input v-model="form.org" placeholder="请输入所属机构名" />
+                    </el-tooltip>
+                  </el-form-item>
+                  <el-form-item
+                    v-if="form.method !=='install'"
+                    id="orgs"
+                    label="机构列表："
+                    prop="org"
+                  >
+                    <el-tooltip effect="light" placement="top">
+                      <div slot="content">链码被安装的机构列表。必须以 JSON 数组形式填入，例：["Org1"]</div>
+                      <el-input v-model="form.org" placeholder="请输入机构列表" />
+                    </el-tooltip>
+                  </el-form-item>
+                  <el-form-item v-if="form.method === 'install'" id="compressedContent" label="合约文件包：" prop="compressedContent">
+                    <el-upload
+                      ref="uploadChaincode"
+                      action=""
+                      :file-list="fileList"
+                      accept=".tar,.gz"
+                      :on-change="changeChaincodeFile"
+                      :before-remove="beforeRemove"
+                      :http-request="uploadContractCompressedHandler"
+                      :auto-upload="false"
+                    >
+                      <div slot="tip" class="el-upload__tip upload-tip-list">
+                        <p>请上传链码打包后的 tar/gz 文件</p>
+                        <p>Golang 版本链码需放在 src/chaincode/ 目录下才能正确安装</p>
+                      </div>
+                      <el-button slot="trigger">选择文件</el-button>
+                    </el-upload>
+                  </el-form-item>
+                  <el-form-item
+                    id="fabricVersion"
+                    label="合约版本号："
+                    prop="version"
+                  >
+                    <el-input v-model.trim="form.version" placeholder="请输入合约版本号" />
+                  </el-form-item>
+                  <el-form-item id="lang" label="合约语言：" prop="lang">
+                    <el-select v-model="form.lang" placeholder="请选择合约语言">
+                      <el-option label="Golang" value="GO_LANG" />
+                      <el-option label="Java" value="JAVA" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item
+                    v-if="form.method==='instantiate'||form.method==='upgrade'"
+                    id="policy"
+                    label="背书策略："
+                    prop="policy"
+                  >
+                    <el-upload
+                      ref="uploadPolicy"
+                      action=""
+                      accept=".yaml"
+                      :file-list="policyFile"
+                      :on-change="changePolicyFile"
+                      :before-remove="beforeRemove"
+                      :http-request="uploadPolicyHandler"
+                      :auto-upload="false"
+                    >
+                      <div slot="tip" class="el-upload__tip">请上传 policy 的 YAML 文件，不上传默认为 default</div>
+                      <el-button slot="trigger">选择文件</el-button>
+                    </el-upload>
+                  </el-form-item>
+                  <el-form-item
+                    v-if="form.method==='instantiate'||form.method==='upgrade'"
+                    id="args"
+                    label="其他参数："
+                    prop="args"
+                  >
+                    <el-tooltip effect="light" placement="top">
+                      <div slot="content">必须以 JSON 数组形式填入，例：["a","10"]</div>
+                      <el-input v-model="form.args" placeholder="请输入调用参数" />
+                    </el-tooltip>
+                  </el-form-item>
+                </div>
+              </section>
+
+              <section class="deploy-section deploy-section--submit">
+                <!-- <div class="deploy-section__title">提交登记</div> -->
+                <el-form-item v-if="submitResponse !== null" label="提交结果：">
+                  <el-input
+                    v-model="submitResponse"
+                    :rows="5"
+                    type="textarea"
+                    readonly
+                    resize="none"
+                    class="submit-result"
+                  />
+                </el-form-item>
+                <div class="deploy-footer">
+                  <el-button @click="$router.push({ path: 'resourceList' })">返回数据资产目录</el-button>
+                  <el-button @click="onCancel">重置</el-button>
+                  <el-button id="onSubmit" v-loading.fullscreen.lock="loading" type="primary" @click="onSubmit">提交登记</el-button>
+                </div>
+              </section>
+            </el-form>
+          </div>
         </el-col>
       </el-row>
     </el-card>
@@ -328,21 +357,21 @@ export default {
       lockDown: false,
       isFullPath: false,
       formRules: {
-        stubType: [{ required: true, message: '请选择链类型', trigger: 'blur' }],
+        stubType: [{ required: true, message: '请选择底层链环境', trigger: 'blur' }],
         compressedContent: [{ required: true, message: '请上传合约文件', trigger: 'blur' }],
         chosenSolidity: [{ required: true, message: '合约文件不能为空', trigger: 'blur' }],
-        fullPath: [{ required: true, message: '资源路径不能为空', trigger: 'blur' },
+        fullPath: [{ required: true, message: '数据资产标识不能为空', trigger: 'blur' },
           {
             pattern: /^((?!_)(?!-)(?!.*?_$)(?!.*?-$)[\u4e00-\u9fa5\w-]+\.){2}(?!_)(?!-)(?!.*?_$)(?!.*?-$)[\u4e00-\u9fa5\w-]+$/,
             required: true,
-            message: '资源路径格式错误，应形如 \'path.to.resource\'',
+            message: '数据资产标识格式错误，应形如 \'path.to.resource\'',
             trigger: 'blur'
           }],
-        appendPath: [{ required: true, message: '资源路径不能为空', trigger: 'blur' },
+        appendPath: [{ required: true, message: '数据资产标识不能为空', trigger: 'blur' },
           {
             pattern: /^(?!_)(?!-)(?!.*?_$)(?!.*?-$)[\u4e00-\u9fa5\w-]+$/,
             required: true,
-            message: '资源路径格式错误，应形如 \'path.to.resource\'',
+            message: '数据资产名称格式错误',
             trigger: 'blur'
           }
         ],
@@ -382,7 +411,7 @@ export default {
           },
           { required: true, message: '合约类名长度不能超过128', trigger: 'blur', max: 128 }
         ],
-        method: [{ required: true, message: '请选择操作类型', trigger: 'blur' }]
+        method: [{ required: true, message: '请选择登记方式', trigger: 'blur' }]
       }
     }
   },
@@ -458,7 +487,7 @@ export default {
     },
     onCancel() {
       this.$message({
-        message: '已重置表单',
+        message: '已重置',
         type: 'info'
       })
       this.$refs.deployForm.resetFields()
@@ -926,7 +955,156 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+.resource-deployment__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
 
+  h2 {
+    margin: 0;
+    color: #303133;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: #909399;
+    font-size: 13px;
+    line-height: 20px;
+  }
+}
+
+.resource-deployment__help {
+  padding: 0;
+  margin-left: 4px;
+}
+
+.resource-deployment::v-deep .el-page-header {
+  align-items: center;
+}
+
+.resource-deployment::v-deep .el-page-header__left {
+  display: flex;
+  align-items: center;
+  height: auto;
+  line-height: 24px;
+}
+
+.resource-deployment::v-deep .el-page-header__title {
+  line-height: 24px;
+}
+
+.resource-deployment__form-wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.resource-deployment__steps {
+  margin-bottom: 22px;
+}
+
+.resource-deploy-form {
+  ::v-deep .el-form-item__label {
+    white-space: nowrap;
+  }
+
+  .el-select,
+  .el-input,
+  .el-textarea {
+    width: 100%;
+  }
+}
+
+.deploy-section {
+  padding-top: 20px;
+  margin-top: 20px;
+  border-top: 1px solid #ebeef5;
+}
+
+.deploy-section:first-of-type {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.deploy-section__title {
+  margin-bottom: 16px;
+  color: #303133;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.deploy-section__hint {
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  color: #606266;
+  font-size: 13px;
+  line-height: 20px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+}
+
+.option-label {
+  float: left;
+}
+
+.option-tech {
+  float: right;
+  color: #8492a6;
+  font-size: 13px;
+}
+
+.upload-field-row {
+  align-items: flex-start;
+}
+
+.upload-tip-list p {
+  margin: 4px 0 0;
+}
+
+.asset-path-input::v-deep .el-input-group__prepend {
+  width: 180px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  overflow: hidden;
+  color: #606266;
+  text-align: left;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.contract-address-input::v-deep .el-input-group__prepend {
+  width: 70px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  text-align: center;
+}
+
+.deploy-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.deploy-footer .el-button + .el-button {
+  margin-left: 0;
+}
+
+.submit-result::v-deep textarea {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+@media (max-width: 992px) {
+  .upload-field-row .el-col {
+    width: 100%;
+  }
+}
 </style>
 

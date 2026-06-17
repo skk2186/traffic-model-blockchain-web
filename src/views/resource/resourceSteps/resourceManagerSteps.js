@@ -1,20 +1,20 @@
 export const resourceManagerSteps = [
   {
     element: '#ChainExplorer',
-    title: '1. 导航选择',
-    intro: '第一步：从zone-chain导航中选择对应的链',
+    title: '1. 选择协同网络',
+    intro: '从左侧协同网络中选择数据资产所属的链网络。',
     position: 'right'
   },
   {
     element: '#ResourceExplorer',
-    title: '2. 资源列表展示',
-    intro: '第二步：选择好对应的链之后，就会在资源列表中展示这条链中所有资源',
+    title: '2. 查看数据资产目录',
+    intro: '选择链网络后，可在数据资产目录中查看该链已登记的数据资产。',
     position: 'left'
   },
   {
     element: '#resourceDeploy',
-    title: '资源部署',
-    intro: '若需要部署资源，请点击"部署资源"按钮',
+    title: '登记数据资产',
+    intro: '如需接入新的链上数据服务，请点击“登记数据资产”。',
     position: 'left'
   }
 ]

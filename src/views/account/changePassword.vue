@@ -3,7 +3,7 @@
     <el-card>
       <template slot="header">
         <el-page-header
-          title="账户管理"
+          title="平台身份"
           @back="() => { this.$router.push({ path: '/account/index' }) }"
         >
           <span slot="content" style="font-size: 16px">设置新的密码</span>

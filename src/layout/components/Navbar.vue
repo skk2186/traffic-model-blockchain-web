@@ -114,7 +114,7 @@
         <el-dropdown-menu slot="dropdown">
           <router-link to="/account/index">
             <el-dropdown-item>
-              账户管理
+              身份管理
             </el-dropdown-item>
           </router-link>
           <router-link to="/account/changePassword">

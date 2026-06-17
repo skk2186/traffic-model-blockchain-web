@@ -66,34 +66,34 @@ export const asyncRoutes = [
       }
     ]
   },
-  {
-    path: '/router',
-    component: Layout,
-    name: 'Router',
-    redirect: '/router/routerManager',
-    children: [
-      {
-        name: 'routerManager',
-        path: 'routerManager',
-        component: () => import('@/views/router/routerManager'),
-        meta: {
-          title: '节点管理',
-          icon: 'el-icon-connection',
-          roles: ['admin', 'user']
-        }
-      },
-      {
-        path: 'routerGuide',
-        hidden: true,
-        component: () => import('@/views/router/routerGuide'),
-        meta: {
-          title: '节点接入',
-          icon: 'el-icon-upload',
-          roles: ['admin', 'user']
-        }
-      }
-    ]
-  },
+  // {
+  //   path: '/router',
+  //   component: Layout,
+  //   name: 'Router',
+  //   redirect: '/router/routerManager',
+  //   children: [
+  //     {
+  //       name: 'routerManager',
+  //       path: 'routerManager',
+  //       component: () => import('@/views/router/routerManager'),
+  //       meta: {
+  //         title: '节点管理',
+  //         icon: 'el-icon-connection',
+  //         roles: ['admin', 'user']
+  //       }
+  //     },
+  //     {
+  //       path: 'routerGuide',
+  //       hidden: true,
+  //       component: () => import('@/views/router/routerGuide'),
+  //       meta: {
+  //         title: '节点接入',
+  //         icon: 'el-icon-upload',
+  //         roles: ['admin', 'user']
+  //       }
+  //     }
+  //   ]
+  // },
   {
     path: '/resource',
     component: Layout,

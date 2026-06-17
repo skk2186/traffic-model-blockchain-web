@@ -1,64 +1,81 @@
 <template>
-  <div>
-    <el-table
-      :data="resources"
-      tooltip-effect="light"
-      height="calc(100% - 60px)"
-    >
-      <el-table-column label="资源路径" min-width="100px" show-overflow-tooltip>
-        <template slot-scope="scope">{{ scope.row.path }}</template>
-      </el-table-column>
-      <el-table-column label="资源类型" width="120px">
-        <template slot-scope="scope"><el-tag type="info">{{ scope.row.stubType }}</el-tag></template>
-      </el-table-column>
-      <el-table-column label="属性" min-width="150px" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <clipboard :input-data="JSON.stringify(scope.row.properties)" style="margin-right: 10px;float:left" />
-          <span>{{ JSON.stringify(scope.row.properties) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column fixed="right" label="操作" width="180px">
-        <template slot-scope="scope">
-          <el-button-group style="padding: 5px; width: 100%">
-            <el-button
-              plain
-              size="mini"
-              icon="el-icon-edit-outline"
-              style="padding: 8px"
-              @click="onSend(scope.row.path)"
-            >发交易</el-button>
-            <el-button
-              plain
-              size="mini"
-              icon="el-icon-view"
-              style="padding: 8px"
-              @click="onCall(scope.row.path)"
-            >查状态</el-button>
-          </el-button-group>
-        </template>
-      </el-table-column>
-    </el-table>
-    <el-pagination
-      background
-      :page-size="pageSize"
-      layout="prev, pager, next"
-      :total="total"
-      style="text-align: center; margin-top: 10px; min-height: 40px"
-      :current-page="page"
-      @current-change="setPage"
-    />
+  <div v-loading="listLoading" class="resource-explorer">
+    <div v-if="!chain" class="resource-empty">
+      <i class="el-icon-connection resource-empty__icon" />
+      <div class="resource-empty__title">请先选择协同网络</div>
+      <div class="resource-empty__desc">从左侧选择一个链网络后，可查看其中已登记的数据资产</div>
+    </div>
 
-    <el-dialog :title="'调用资源'" :visible.sync="callDialogOpen" :destroy-on-close="true" width="45%">
+    <template v-else>
+      <div v-if="resources.length === 0" class="resource-empty">
+        <i class="el-icon-folder-opened resource-empty__icon" />
+        <div class="resource-empty__title">当前协同网络暂无数据资产</div>
+        <div class="resource-empty__desc">可点击“登记数据资产”接入新的链上数据服务</div>
+      </div>
+
+      <el-table
+        v-else
+        class="resource-table"
+        :data="resources"
+        height="100%"
+        tooltip-effect="light"
+      >
+        <el-table-column label="数据资产标识" min-width="180" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span class="resource-path">{{ scope.row.path }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="链适配类型" min-width="130" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tag type="info" class="resource-type-tag">{{ scope.row.stubType }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="链上元数据" min-width="180" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <div class="metadata-cell">
+              <clipboard :input-data="JSON.stringify(scope.row.properties)" />
+              <span class="metadata-cell__text">{{ formatProperties(scope.row.properties) }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220">
+          <template slot-scope="scope">
+            <div class="resource-actions">
+              <el-button
+                plain
+                size="mini"
+                icon="el-icon-edit-outline"
+                class="resource-actions__button"
+                @click="onSend(scope.row.path)"
+              >发起共享</el-button>
+              <el-button
+                plain
+                size="mini"
+                icon="el-icon-view"
+                class="resource-actions__button"
+                @click="onCall(scope.row.path)"
+              >查询状态</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+
+    </template>
+
+    <el-dialog class="asset-call-dialog" :title="'数据资产调用'" :visible.sync="callDialogOpen" :destroy-on-close="true" width="52%">
       <el-row>
-        <el-col :span="18" :offset="2">
+        <el-col :span="20" :offset="2">
           <el-form v-loading="loading">
             <transaction-form
               ref="transactionForm"
+              asset-mode
+              show-cancel
               :transaction="transactionData"
               @submitClick="onSubmit"
               @clearClick="onClearTransaction"
+              @cancelClick="callDialogOpen = false"
             >
-              <el-input slot="path" v-model="transactionData.path" style="width: calc(100% - 63px)" readonly />
+              <el-input slot="path" v-model="transactionData.path" readonly />
             </transaction-form>
           </el-form>
         </el-col>
@@ -109,21 +126,35 @@ export default {
         isXATransaction: false
       },
       selection: null,
+      listLoading: false,
       loading: false
     }
   },
   watch: {
-    chain: function() {
+    chain: function(value) {
       this.page = 1
-      this.refresh()
+      if (value) {
+        this.refresh()
+      } else {
+        this.resources = []
+        this.total = 0
+      }
     }
   },
   methods: {
-    refresh() {
+    refresh(showLoading = false) {
       this.selection = null
       var path = this.chain
+      if (!path) {
+        this.resources = []
+        this.total = 0
+        return Promise.resolve()
+      }
+      if (showLoading) {
+        this.setListLoading(true)
+      }
 
-      getResourceList({
+      return getResourceList({
         path: path,
         offset: (this.page - 1) * this.pageSize,
         size: this.pageSize
@@ -134,7 +165,7 @@ export default {
         } else {
           this.$message({
             type: 'error',
-            message: '查询资源列表失败, 错误信息: ' + response.message
+            message: '查询数据资产目录失败，错误信息: ' + response.message
           })
         }
       }).catch((error) => {
@@ -143,12 +174,18 @@ export default {
           type: 'error',
           message: '网络异常'
         })
+      }).finally(() => {
+        if (showLoading) {
+          this.setListLoading(false)
+        }
       })
     },
-    setPage(value) {
-      this.page = value
-
-      this.refresh()
+    formatProperties(properties) {
+      return JSON.stringify(properties)
+    },
+    setListLoading(value) {
+      this.listLoading = value
+      this.$emit('loading-change', value)
     },
     onCall(path) {
       this.onClearTransaction()
@@ -224,5 +261,127 @@ export default {
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
+.resource-explorer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.resource-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+  padding: 48px 16px;
+  color: #909399;
+  text-align: center;
+}
+
+.resource-empty__icon {
+  margin-bottom: 16px;
+  color: #c0c4cc;
+  font-size: 44px;
+}
+
+.resource-empty__title {
+  color: #303133;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.resource-empty__desc {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.resource-table {
+  width: 100%;
+}
+
+.resource-table::v-deep .el-table__cell {
+  padding: 12px 0;
+}
+
+.resource-table::v-deep .cell {
+  line-height: 32px;
+}
+
+.resource-path {
+  display: block;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-type-tag {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.metadata-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.metadata-cell::v-deep > div {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.metadata-cell::v-deep .el-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.metadata-cell__text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.resource-actions__button {
+  width: 88px;
+  height: 32px;
+  padding: 0;
+  line-height: 30px;
+  white-space: nowrap;
+}
+
+.resource-actions__button + .resource-actions__button {
+  margin-left: 0;
+}
+
+.asset-call-dialog::v-deep .el-input,
+.asset-call-dialog::v-deep .el-textarea {
+  width: 100%;
+}
 </style>

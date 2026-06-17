@@ -1,8 +1,8 @@
 <template>
   <transition name="el-fade-in-linear">
     <div v-show="show" class="app-container">
-      <el-card>
-        <div slot="header" class="account-card-header">
+      <el-card class="box">
+        <div class="account-card-header">
           <div>
             <div class="account-card-title">
               <span>链上身份与凭证</span>
@@ -182,7 +182,7 @@
           </div>
           <el-alert
             class="add-credential-alert"
-            title="用于创建或导入区块链签名凭证。密钥生成、上传和提交逻辑保持不变。"
+            title="用于创建或导入区块链签名凭证。密钥生成、上传和提交逻辑保持不变"
             type="info"
             :closable="false"
             show-icon
@@ -1202,11 +1202,18 @@ function buildChainAccountTable(ua) {
 </script>
 
 <style lang="scss">
+.box{
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
 .account-card-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
+  margin-bottom: 16px;
 }
 
 .account-card-title {
@@ -1224,7 +1231,7 @@ function buildChainAccountTable(ua) {
 
 .account-card-desc,
 .section-desc {
-  margin-top: 8px;
+  margin: 4px 0 0;
   font-size: 13px;
   line-height: 1.5;
   color: #909399;

@@ -3,25 +3,29 @@
     <el-row>
       <el-form
         ref="transactionForm"
-        label-width="auto"
+        :label-width="labelWidth"
         label-position="right"
         :model="transaction"
         :rules="transactionRules"
-        class="dynamicForm"
+        :class="['dynamicForm', { 'transaction-dialog-form': assetMode }]"
       >
+        <div v-if="assetMode" class="transaction-mode-summary">
+          <div class="transaction-mode-summary__title">{{ operationTitle }}</div>
+          <div class="transaction-mode-summary__desc">{{ operationDesc }}</div>
+        </div>
         <el-form-item label="调用方式:">
           <el-col>
             <el-radio-group v-model="transaction.execMethod" size="small" @change="onExecMethodChange">
-              <el-radio label="sendTransaction">发交易</el-radio>
-              <el-radio label="call">查状态</el-radio>
+              <el-radio label="sendTransaction">{{ sendLabel }}</el-radio>
+              <el-radio label="call">{{ callLabel }}</el-radio>
             </el-radio-group>
           </el-col>
         </el-form-item>
-        <el-form-item label="资源路径:" prop="path">
+        <el-form-item :label="pathLabel" prop="path">
           <slot name="path" />
         </el-form-item>
         <el-form-item label="调用方法:" prop="method">
-          <el-input v-model.trim="transaction.method" style="width: calc(100% - 63px)" placeholder="请输入调用方法" @input="onInputMethod" />
+          <el-input v-model.trim="transaction.method" placeholder="请输入调用方法" @input="onInputMethod" />
         </el-form-item>
         <div v-if="transaction.args.length > 0">
           <div v-for="(arg, index) in transaction.args" :key="arg.key">
@@ -29,10 +33,10 @@
               :label="'调用参数:'"
               :prop="'args.' + index + '.value'"
             >
-              <el-input v-model="arg.value" :placeholder="'若为空则参数为空字符串'" style="width: calc(100% - 63px)">
-                <template slot="prepend">{{ index }}</template>
-              </el-input>
-              <el-button-group>
+              <div class="transaction-arg-row">
+                <el-input v-model="arg.value" :placeholder="'若为空则参数为空字符串'" class="transaction-arg-input">
+                  <template slot="prepend">参数 {{ index }}</template>
+                </el-input>
                 <el-button
                   icon="el-icon-circle-plus-outline"
                   class="hoverButton"
@@ -45,7 +49,7 @@
                   type="text"
                   @click.prevent="removeArg(arg)"
                 />
-              </el-button-group>
+              </div>
             </el-form-item>
           </div>
         </div>
@@ -54,17 +58,30 @@
             :label="'调用参数:'"
             :rules="[{ required: true, message: '参数输入不能为空，可删除该参数置空', trigger: 'blur'}]"
           >
-            <el-button-group>
+            <div class="transaction-arg-row">
               <el-button
                 icon="el-icon-circle-plus-outline"
                 class="hoverButton"
                 type="text"
                 @click.prevent="addArg"
               />
-            </el-button-group>
+            </div>
           </el-form-item>
         </div>
-        <el-form-item style="margin-bottom: 20px">
+        <el-form-item v-if="submitResponse !== null" :label="resultLabel">
+          <el-input
+            v-if="submitResponse !== null"
+            v-model="submitResponse"
+            type="textarea"
+            :rows="5"
+            readonly
+            resize="none"
+            class="transaction-result"
+          />
+        </el-form-item>
+        <div class="transaction-form-footer">
+          <el-button v-if="showCancel" size="small" @click="onCancel">取消</el-button>
+          <el-button size="small" @click="clearForm">{{ resetLabel }}</el-button>
           <el-popconfirm
             title="确定执行该调用？"
             @onConfirm="onSubmit"
@@ -76,18 +93,7 @@
               type="primary"
             >执行调用</el-button>
           </el-popconfirm>
-          <el-button size="small" style="margin-left: 10px" @click="clearForm">重置表单</el-button>
-        </el-form-item>
-        <el-form-item v-if="submitResponse !== null" label="调用结果:">
-          <el-input
-            v-if="submitResponse !== null"
-            v-model="submitResponse"
-            :autosize="{minRows: 1}"
-            type="textarea"
-            readonly
-            style="margin-bottom: 20px; width: 100%"
-          />
-        </el-form-item>
+        </div>
       </el-form>
     </el-row>
   </div>
@@ -117,6 +123,14 @@ export default {
           isXATransaction: false
         }
       }
+    },
+    assetMode: {
+      type: Boolean,
+      default: false
+    },
+    showCancel: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -150,6 +164,34 @@ export default {
       },
       submitResponse: null,
       loading: false
+    }
+  },
+  computed: {
+    labelWidth() {
+      return this.assetMode ? '120px' : 'auto'
+    },
+    sendLabel() {
+      return this.assetMode ? '发起可信共享' : '发交易'
+    },
+    callLabel() {
+      return this.assetMode ? '查询资产状态' : '查状态'
+    },
+    pathLabel() {
+      return this.assetMode ? '数据资产标识:' : '资源路径:'
+    },
+    resultLabel() {
+      return this.assetMode ? '执行结果:' : '调用结果:'
+    },
+    resetLabel() {
+      return this.assetMode ? '重置' : '重置表单'
+    },
+    operationTitle() {
+      return this.transaction.execMethod === 'call' ? '当前操作：查询资产状态' : '当前操作：发起可信共享'
+    },
+    operationDesc() {
+      return this.transaction.execMethod === 'call'
+        ? '该操作执行只读调用，不产生新的链上交易'
+        : '该操作会提交链上交易并形成可审计记录'
     }
   },
   methods: {
@@ -227,6 +269,9 @@ export default {
         this.submitResponse = (res === '[]') ? '调用成功，返回结果为空' : res
       }
     },
+    onCancel() {
+      this.$emit('cancelClick')
+    },
     clearForm() {
       this.$refs['transactionForm'].resetFields()
       this.submitResponse = null
@@ -247,10 +292,82 @@ body {
     width: 100%;
   }
 }
+
+.transaction-dialog-form {
+  .el-input,
+  .el-textarea {
+    margin-right: 0;
+    width: 100%;
+  }
+}
+
+.transaction-mode-summary {
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+}
+
+.transaction-mode-summary__title {
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.transaction-mode-summary__desc {
+  margin-top: 4px;
+  color: #606266;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.transaction-arg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.transaction-arg-row .el-button + .el-button,
+.transaction-form-footer .el-button + .el-button {
+  margin-left: 0;
+}
+
+.transaction-arg-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.transaction-arg-input::v-deep .el-input-group__prepend {
+  width: 80px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  text-align: center;
+}
+
+.transaction-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.transaction-result::v-deep textarea {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
 .hoverButton {
-  font-size: 25px;
-  padding: 6px 0px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   color: #909399;
+  font-size: 22px;
   &:hover {
     transform: rotate(180deg);
   }
