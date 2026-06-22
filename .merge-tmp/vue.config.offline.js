@@ -5,7 +5,7 @@ function resolve(dir) {
   return path.join(__dirname, dir)
 }
 
-const name = '交通可信协同平台' // page title
+const name = 'WeCross Web App' // page title
 
 // If your port is set to 80,
 // use administrator privileges to execute the command line.
@@ -42,11 +42,10 @@ module.exports = {
         changeOrigin: true
       },
       '/': {
-        target: process.env.VUE_APP_ROUTER_TARGET || 'http://175.178.222.73:8250',
+        target: process.env.VUE_APP_ROUTER_TARGET || 'http://127.0.0.1:8250',
         changeOrigin: true
       }
     }
-
     // before: require('./mock/mock-server.js')
   },
   configureWebpack: {

@@ -49,7 +49,7 @@ export const asyncRoutes = [
         name: 'AccountManager',
         component: () => import('@/views/account/index'),
         meta: {
-          title: '身份凭证',
+          title: '账户管理',
           icon: 'el-icon-user',
           roles: ['admin', 'user']
         }
@@ -66,34 +66,34 @@ export const asyncRoutes = [
       }
     ]
   },
-  // {
-  //   path: '/router',
-  //   component: Layout,
-  //   name: 'Router',
-  //   redirect: '/router/routerManager',
-  //   children: [
-  //     {
-  //       name: 'routerManager',
-  //       path: 'routerManager',
-  //       component: () => import('@/views/router/routerManager'),
-  //       meta: {
-  //         title: '节点管理',
-  //         icon: 'el-icon-connection',
-  //         roles: ['admin', 'user']
-  //       }
-  //     },
-  //     {
-  //       path: 'routerGuide',
-  //       hidden: true,
-  //       component: () => import('@/views/router/routerGuide'),
-  //       meta: {
-  //         title: '节点接入',
-  //         icon: 'el-icon-upload',
-  //         roles: ['admin', 'user']
-  //       }
-  //     }
-  //   ]
-  // },
+  {
+    path: '/router',
+    component: Layout,
+    name: 'Router',
+    redirect: '/router/routerManager',
+    children: [
+      {
+        name: 'routerManager',
+        path: 'routerManager',
+        component: () => import('@/views/router/routerManager'),
+        meta: {
+          title: '路由管理',
+          icon: 'el-icon-connection',
+          roles: ['admin', 'user']
+        }
+      },
+      {
+        path: 'routerGuide',
+        hidden: true,
+        component: () => import('@/views/router/routerGuide'),
+        meta: {
+          title: '路由部署',
+          icon: 'el-icon-upload',
+          roles: ['admin', 'user']
+        }
+      }
+    ]
+  },
   {
     path: '/resource',
     component: Layout,
@@ -105,7 +105,7 @@ export const asyncRoutes = [
         path: 'resourceList',
         component: () => import('@/views/resource/resourceManager'),
         meta: {
-          title: '数据资产',
+          title: '资源管理',
           icon: 'el-icon-files',
           roles: ['admin', 'user']
         }
@@ -116,7 +116,7 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/resource/resourceDeployment'),
         meta: {
-          title: '资产登记',
+          title: '资源部署',
           icon: 'el-icon-upload',
           activeMenu: '/resource/resourceList',
           roles: ['admin', 'user']
@@ -135,7 +135,7 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/transaction/rawTransaction'),
         meta: {
-          title: '发起共享',
+          title: '交易发起',
           icon: 'el-icon-s-opportunity',
           activeMenu: '/transaction/transactionList',
           roles: ['admin', 'user']
@@ -146,7 +146,7 @@ export const asyncRoutes = [
         name: 'TransactionList',
         component: () => import('@/views/transaction/transactionManager'),
         meta: {
-          title: '共享审计',
+          title: '交易管理',
           icon: 'el-icon-sort',
           roles: ['admin', 'user']
         }
@@ -165,7 +165,7 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/transaction/xaTransaction'),
         meta: {
-          title: '创建协同任务',
+          title: '事务交易',
           icon: 'el-icon-s-order',
           activeMenu: '/xaTransaction/xaTransactionList',
           roles: ['admin', 'user']
@@ -176,7 +176,7 @@ export const asyncRoutes = [
         path: 'xaTransactionList',
         component: () => import('@/views/transaction/xaTransactionList'),
         meta: {
-          title: '跨域协同',
+          title: '事务管理',
           icon: 'el-icon-finished',
           roles: ['admin', 'user']
         }
@@ -211,24 +211,23 @@ export const asyncRoutes = [
       meta: { title: '链下验证', icon: 'el-icon-circle-check', roles: ['admin', 'user'] }
     }]
   },
-  // {
-  //   path: '/documents',
-  //   component: Layout,
-  //   name: 'Documents',
-  //   redirect: '/documents/index',
-  //   children: [
-  //     {
-  //       path: 'index',
-  //       component: () => import('@/views/document/index'),
-  //       meta: {
-  //         title: '参考文档',
-  //         icon: 'el-icon-document',
-  //         roles: ['admin', 'user']
-  //       }
-  //     }
-  //   ]
-  // },
-
+  {
+    path: '/documents',
+    component: Layout,
+    name: 'Documents',
+    redirect: '/documents/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/document/index'),
+        meta: {
+          title: '参考文档',
+          icon: 'el-icon-document',
+          roles: ['admin', 'user']
+        }
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]
