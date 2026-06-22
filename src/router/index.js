@@ -165,7 +165,7 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/transaction/xaTransaction'),
         meta: {
-          title: '发起协同',
+          title: '创建协同任务',
           icon: 'el-icon-s-order',
           activeMenu: '/xaTransaction/xaTransactionList',
           roles: ['admin', 'user']

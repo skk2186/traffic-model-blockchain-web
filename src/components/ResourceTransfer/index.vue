@@ -3,13 +3,13 @@
     <!-- transfer left -->
     <div class="transfer-base">
       <h3 class="transfer-title">
-        <span>待选资源列表</span>
+        <span>{{ sourceTitle }}</span>
       </h3>
       <div class="transfer-left">
 
         <!-- transfer left panel -->
         <div class="transfer-main">
-          <el-input v-model="filterFrom" placeholder="输入关键字进行过滤" size="small" class="filter-tree" />
+          <el-input v-model="filterFrom" :placeholder="filterPlaceholder" size="small" class="filter-tree" />
           <el-tree
             ref="from-tree"
             lazy
@@ -29,12 +29,14 @@
             stripe
             tooltip-effect="light"
             :data="tableShowData"
-            height="calc(100% - 34px)"
+            height="calc(100% - 44px)"
             @selection-change="handleSelectionChange"
           >
             <el-table-column fixed width="42px" type="selection" :selectable="(row)=>{return !row.path.endsWith('.WeCrossHub')}" />
-            <el-table-column label="可选资源路径" prop="path" show-overflow-tooltip>
-              <template slot-scope="scope">{{ scope.row.path }}</template>
+            <el-table-column :label="sourceColumnLabel" prop="path" show-overflow-tooltip>
+              <template slot-scope="scope">
+                <span class="path-text">{{ scope.row.path }}</span>
+              </template>
             </el-table-column>
           </el-table>
           <el-pagination
@@ -57,7 +59,7 @@
       <template>
         <p class="transfer-center-item">
           <el-button :disabled="from_disabled" @click="addToAims">
-            {{ "添加" }}
+            {{ addButtonText }}
             <i class="el-icon-arrow-right" />
           </el-button>
         </p>
@@ -66,7 +68,7 @@
             :disabled="to_disabled"
             icon="el-icon-arrow-left"
             @click="removeToSource"
-          >{{ "移除" }}
+          >{{ removeButtonText }}
           </el-button>
         </p>
       </template>
@@ -79,18 +81,20 @@
           :indeterminate="to_is_indeterminate"
           @change="toAllBoxChange"
         />
-        <span>已选资源列表</span>
+        <span>{{ targetTitle }}<template v-if="showTargetCount">（{{ toShowData.length }}）</template></span>
       </h3>
       <!-- transfer right panel -->
       <div class="transfer-main">
-        <el-input v-model="filterTo" placeholder="输入关键字进行过滤" size="small" class="filter-tree" />
+        <el-input v-model="filterTo" :placeholder="filterPlaceholder" size="small" class="filter-tree" />
         <el-checkbox-group v-model="to_check_keys" class="transfer-right-panel">
           <el-checkbox
             v-for="item in toDataFilter"
             :key="item.path"
             class="el-transfer-panel__item"
             :label="item.path"
-          />
+          >
+            <span class="path-text">{{ item.path }}</span>
+          </el-checkbox>
         </el-checkbox-group>
       </div>
     </div>
@@ -131,6 +135,34 @@ export default {
     toData: {
       type: Array,
       default: () => []
+    },
+    sourceTitle: {
+      type: String,
+      default: '待选资源列表'
+    },
+    sourceColumnLabel: {
+      type: String,
+      default: '可选资源路径'
+    },
+    targetTitle: {
+      type: String,
+      default: '已选资源列表'
+    },
+    addButtonText: {
+      type: String,
+      default: '添加'
+    },
+    removeButtonText: {
+      type: String,
+      default: '移除'
+    },
+    filterPlaceholder: {
+      type: String,
+      default: '输入关键字进行过滤'
+    },
+    showTargetCount: {
+      type: Boolean,
+      default: false
     },
     defaultProps: {
       type: Object,
@@ -423,6 +455,9 @@ a {
 
 .wl-transfer {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) 128px minmax(0, 1fr);
+  gap: 16px;
   overflow: hidden;
 
   .el-tree {
@@ -431,32 +466,30 @@ a {
   }
 
   .transfer-base {
+    display: grid;
+    grid-template-rows: 40px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
     border: 1px solid #ebeef5;
-    margin-left: 5%;
-    width: 50%;
+    width: 100%;
     height: 100%;
     box-sizing: border-box;
     border-radius: 5px;
     vertical-align: middle;
+    overflow: hidden;
   }
 
   .transfer-left {
-    position: absolute;
-    top: 41px;
-    left: 5%;
+    grid-row: 2;
+    grid-column: 1;
   }
 
   .transfer-left-table {
-    position: absolute;
-    top: 41px;
-    left: 30%;
+    grid-row: 2;
+    grid-column: 2;
   }
 
   .transfer-right {
-    position: absolute;
-    top: 0;
-    right: 0;
-    margin-right: 5%;
+    grid-column: 3;
   }
 
   .transfer-right-only {
@@ -464,49 +497,61 @@ a {
   }
 
   .transfer-main {
+    display: flex;
+    flex-direction: column;
     padding: 10px;
-    height: calc(100% - 40px);
+    height: 100%;
     box-sizing: border-box;
-    overflow: auto;
+    overflow: hidden;
   }
 
   .transfer-left {
-    width: 25%;
+    width: 100%;
     height: 100%;
     vertical-align: middle;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .transfer-left-table {
-    width: 25%;
+    width: 100%;
     height: 100%;
     vertical-align: middle;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .transfer-right-panel{
+    flex: 1;
     margin:0;
     padding:6px 0;
     list-style:none;
-    height: calc(100% - 40px);
+    min-height: 0;
     overflow:auto;
     -webkit-box-sizing:border-box;
     box-sizing:border-box
   }
 
   .transfer-right {
+    display: grid;
+    grid-template-rows: 40px minmax(0, 1fr);
     border: 1px solid #ebeef5;
-    width: 25%;
+    width: 100%;
     height: 100%;
     box-sizing: border-box;
     border-radius: 5px;
     vertical-align: middle;
+    overflow: hidden;
+    min-width: 0;
   }
 
   .transfer-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 25%;
-    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    grid-column: 2;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
     text-align: center;
   }
 
@@ -515,7 +560,12 @@ a {
     overflow: hidden;
   }
 
+  .transfer-center-item .el-button {
+    width: 96px;
+  }
+
   .transfer-title {
+    grid-column: 1 / -1;
     border-bottom: 1px solid #ebeef5;
     padding: 0 15px;
     height: 40px;
@@ -530,7 +580,59 @@ a {
   }
 
   .filter-tree {
+    flex: 0 0 32px;
     margin-bottom: 10px;
+  }
+
+  .el-table {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .el-tree {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .transfer-left .el-tree {
+    scrollbar-width: none;
+  }
+
+  .transfer-left .el-tree::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .transfer-left-table::v-deep .el-table__body-wrapper {
+    overflow-x: hidden;
+  }
+
+  .el-pagination {
+    flex: 0 0 24px;
+  }
+
+  .el-checkbox {
+    max-width: 100%;
+  }
+
+  .el-checkbox::v-deep .el-checkbox__label {
+    max-width: calc(100% - 24px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .path-text {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    white-space: nowrap;
   }
 }
 </style>

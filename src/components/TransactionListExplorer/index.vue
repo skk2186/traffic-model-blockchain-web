@@ -34,7 +34,7 @@
         <el-table-column label="操作主体" width="120" show-overflow-tooltip>
           <template slot-scope="item">
             <unknown-value v-if="item.row.username === 'unknown'" :tx-hash="item.row.txHash" />
-            <el-tag v-else type="success" effect="plain" class="audit-subject-tag">
+            <el-tag v-else :type="ua.admin ? 'warning' : 'success'" effect="plain" class="audit-subject-tag">
               {{ item.row.username }}
             </el-tag>
           </template>
@@ -229,6 +229,14 @@ export default {
       receiptLoading: false,
       receiptError: false,
       controlVersion: 0
+    }
+  },
+  computed: {
+    ua() {
+      const roles = this.$store.getters.roles || []
+      return {
+        admin: roles.includes('admin')
+      }
     }
   },
   watch: {

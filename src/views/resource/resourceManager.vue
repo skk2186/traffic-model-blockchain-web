@@ -41,7 +41,7 @@
               </div>
               <el-button icon="el-icon-refresh" size="mini" :disabled="!currentChain" :loading="resourceRefreshing" @click="refreshResource">刷新</el-button>
             </div>
-            <ResourceExplorer id="ResourceExplorer" ref="ResourceExplorer" :chain="currentChain" :page-size="1024" @loading-change="resourceRefreshing = $event" />
+            <ResourceExplorer id="ResourceExplorer" ref="ResourceExplorer" :chain="currentChain" :page-size="10" @loading-change="resourceRefreshing = $event" />
           </el-card>
         </el-col>
       </el-row>
@@ -161,11 +161,11 @@ export default {
 .network-panel,
 .resource-panel {
   width: 100%;
-  height: 500px;
+  height: 550px;
 }
 
 .network-panel {
-  margin-bottom: 16px;
+  margin-bottom: 3px;
 }
 
 .network-panel::v-deep .el-card__body {

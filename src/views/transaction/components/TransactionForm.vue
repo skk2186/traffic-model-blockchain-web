@@ -6,14 +6,14 @@
         :label-width="labelWidth"
         label-position="right"
         :model="transaction"
-        :rules="transactionRules"
+        :rules="formRules"
         :class="['dynamicForm', { 'transaction-dialog-form': assetMode }]"
       >
         <div v-if="assetMode" class="transaction-mode-summary">
           <div class="transaction-mode-summary__title">{{ operationTitle }}</div>
           <div class="transaction-mode-summary__desc">{{ operationDesc }}</div>
         </div>
-        <el-form-item label="调用方式:">
+        <el-form-item :label="execMethodLabel">
           <el-col>
             <el-radio-group v-model="transaction.execMethod" size="small" @change="onExecMethodChange">
               <el-radio label="sendTransaction">{{ sendLabel }}</el-radio>
@@ -83,7 +83,7 @@
           <el-button v-if="showCancel" size="small" @click="onCancel">取消</el-button>
           <el-button size="small" @click="clearForm">{{ resetLabel }}</el-button>
           <el-popconfirm
-            title="确定执行该调用？"
+            :title="confirmTitle"
             @onConfirm="onSubmit"
           >
             <el-button
@@ -91,7 +91,7 @@
               v-loading.fullscreen.lock="loading"
               size="small"
               type="primary"
-            >执行调用</el-button>
+            >{{ submitLabel }}</el-button>
           </el-popconfirm>
         </div>
       </el-form>
@@ -131,6 +131,10 @@ export default {
     showCancel: {
       type: Boolean,
       default: false
+    },
+    context: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -167,23 +171,63 @@ export default {
     }
   },
   computed: {
+    formRules() {
+      return {
+        path: [
+          {
+            required: true, message: this.isXAContext ? '数据资产标识不能为空' : '资源路径不能为空', trigger: 'blur'
+          },
+          {
+            pattern: /^((?!_)(?!-)(?!.*?_$)(?!.*?-$)[\u4e00-\u9fa5\w-]+\.){2}(?!_)(?!-)(?!.*?_$)(?!.*?-$)[\u4e00-\u9fa5\w-]+$/,
+            required: true,
+            message: this.isXAContext ? '数据资产标识格式错误，应形如 \'path.to.resource\'' : '资源路径格式错误，应形如 \'path.to.resource\'',
+            trigger: 'blur'
+          }
+        ],
+        method: this.transactionRules.method
+      }
+    },
     labelWidth() {
       return this.assetMode ? '120px' : 'auto'
     },
+    isXAContext() {
+      return this.context === 'xa'
+    },
+    execMethodLabel() {
+      return this.isXAContext ? '操作类型:' : '调用方式:'
+    },
     sendLabel() {
+      if (this.isXAContext) {
+        return '写入操作'
+      }
       return this.assetMode ? '发起可信共享' : '发交易'
     },
     callLabel() {
+      if (this.isXAContext) {
+        return '只读查询'
+      }
       return this.assetMode ? '查询资产状态' : '查状态'
     },
     pathLabel() {
-      return this.assetMode ? '数据资产标识:' : '资源路径:'
+      return this.assetMode || this.isXAContext ? '数据资产标识:' : '资源路径:'
     },
     resultLabel() {
+      if (this.isXAContext) {
+        return '步骤执行结果:'
+      }
       return this.assetMode ? '执行结果:' : '调用结果:'
     },
     resetLabel() {
+      if (this.isXAContext) {
+        return '重置'
+      }
       return this.assetMode ? '重置' : '重置表单'
+    },
+    submitLabel() {
+      return this.isXAContext ? '执行当前步骤' : '执行调用'
+    },
+    confirmTitle() {
+      return this.isXAContext ? '确定执行当前步骤？' : '确定执行该调用？'
     },
     operationTitle() {
       return this.transaction.execMethod === 'call' ? '当前操作：查询资产状态' : '当前操作：发起可信共享'

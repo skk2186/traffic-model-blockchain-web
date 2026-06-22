@@ -17,7 +17,7 @@
         v-else
         class="resource-table"
         :data="resources"
-        height="100%"
+        :height="resourceTableHeight"
         tooltip-effect="light"
       >
         <el-table-column label="数据资产标识" show-overflow-tooltip>
@@ -60,6 +60,16 @@
         </el-table-column>
       </el-table>
 
+      <div v-if="showPagination" class="resource-pagination">
+        <el-pagination
+          background
+          layout="prev, pager, next"
+          :current-page="page"
+          :page-size="pageSize"
+          :total="paginationTotal"
+          @current-change="handlePageChange"
+        />
+      </div>
     </template>
 
     <el-dialog class="asset-call-dialog" :title="'数据资产调用'" :visible.sync="callDialogOpen" :destroy-on-close="true" width="52%">
@@ -105,7 +115,7 @@ export default {
     },
     pageSize: {
       type: Number,
-      default: () => { return 0 }
+      default: () => { return 10 }
     }},
   data: function() {
     return {
@@ -128,6 +138,27 @@ export default {
       selection: null,
       listLoading: false,
       loading: false
+    }
+  },
+  computed: {
+    showPagination() {
+      return this.pageSize > 0 && (
+        this.total > this.pageSize ||
+        this.page > 1 ||
+        this.resources.length >= this.pageSize
+      )
+    },
+    paginationTotal() {
+      if (this.total > this.pageSize) {
+        return this.total
+      }
+      if (this.resources.length >= this.pageSize) {
+        return (this.page + 1) * this.pageSize
+      }
+      return (this.page - 1) * this.pageSize + this.resources.length
+    },
+    resourceTableHeight() {
+      return this.showPagination ? 'calc(100% - 56px)' : '100%'
     }
   },
   watch: {
@@ -186,6 +217,10 @@ export default {
     setListLoading(value) {
       this.listLoading = value
       this.$emit('loading-change', value)
+    },
+    handlePageChange(page) {
+      this.page = page
+      this.refresh(true)
     },
     onCall(path) {
       this.onClearTransaction()
@@ -275,7 +310,6 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
   min-height: 0;
   padding: 48px 16px;
   color: #909399;
@@ -393,6 +427,14 @@ export default {
 
 .resource-actions__button + .resource-actions__button {
   margin-left: 0;
+}
+
+.resource-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  border-top: 1px solid #ebeef5;
 }
 
 .asset-call-dialog::v-deep .el-input,

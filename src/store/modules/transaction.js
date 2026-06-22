@@ -28,7 +28,7 @@ const actions = {
         if (response.errorCode !== 0 || response.data.status !== 0) {
           const errMessage = buildXAError(response)
           handleErrorMsgBox('开启事务失败，错误：', '错误', errMessage, null).then(_ => {})
-          reject()
+          reject(errMessage)
         } else {
           commit('SET_TRANSACTION', { transactionID: transaction.data.xaTransactionID, paths: transaction.data.paths })
           setXATX(JSON.stringify({ transactionID: transaction.data.xaTransactionID, paths: transaction.data.paths }))
