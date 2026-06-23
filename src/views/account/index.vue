@@ -200,8 +200,8 @@
                 <!-- <el-option label="FISCO BCOS 2.0 国密" value="GM_BCOS2.0" /> -->
                 <el-option label="FISCO BCOS 3.0" value="BCOS3_ECDSA_EVM" />
                 <!-- <el-option label="FISCO BCOS 3.0 国密" value="BCOS3_GM_EVM" /> -->
-                <!-- <el-option label="HyperLedger Fabric 1.4" value="Fabric1.4" /> -->
-                <el-option label="HyperLedger Fabric 2.0" value="Fabric2.0" />
+                <el-option label="HyperLedger Fabric 1.4" value="Fabric1.4" />
+                <!-- <el-option label="HyperLedger Fabric 2.0" value="Fabric2.0" /> -->
               </el-select>
             </el-form-item>
 
