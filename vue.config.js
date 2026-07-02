@@ -41,13 +41,15 @@ module.exports = {
         target: process.env.VUE_APP_VERIFICATION_TARGET || 'http://127.0.0.1:8088',
         changeOrigin: true
       },
+      '/api/cross-verification': {
+        target: 'http://127.0.0.1:8088',
+        changeOrigin: true
+      },
       '/': {
         target: process.env.VUE_APP_ROUTER_TARGET || 'http://175.178.222.73:8250',
         changeOrigin: true
       }
     }
-
-    // before: require('./mock/mock-server.js')
   },
   configureWebpack: {
     // provide the app's title in webpack's name field, so that

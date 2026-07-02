@@ -184,6 +184,56 @@ export const asyncRoutes = [
     ]
   },
   {
+    path: '/cross-verification',
+    component: Layout,
+    redirect: '/cross-verification/merkle',
+    name: 'CrossVerification',
+    alwaysShow: true,
+    meta: {
+      title: '跨链可信验证',
+      icon: 'el-icon-document-checked',
+      roles: ['admin', 'user']
+    },
+    children: [
+      {
+        path: 'merkle',
+        component: () => import('@/views/crossVerification/merkle'),
+        name: 'MerkleVerification',
+        meta: {
+          title: '数据完整性验证',
+          roles: ['admin', 'user']
+        }
+      },
+      {
+        path: 'zkp',
+        component: () => import('@/views/crossVerification/zkp'),
+        name: 'ZkpVerification',
+        meta: {
+          title: '隐私证明验证',
+          roles: ['admin', 'user']
+        }
+      },
+      {
+        path: 'threshold-signature',
+        component: () => import('@/views/crossVerification/thresholdSignature'),
+        name: 'ThresholdSignatureVerification',
+        meta: {
+          title: '多方签名验证',
+          roles: ['admin', 'user']
+        }
+      },
+      {
+        path: 'records',
+        component: () => import('@/views/crossVerification/records'),
+        name: 'VerificationRecords',
+        meta: {
+          title: '验证记录',
+          roles: ['admin', 'user']
+        }
+      }
+    ]
+  },
+  {
     path: '/admin',
     component: Layout,
     name: 'AccessManager',
@@ -202,13 +252,14 @@ export const asyncRoutes = [
   {
     path: '/verification',
     component: Layout,
-    name: 'OfflineVerification',
+    name: 'LegacyVerification',
+    hidden: false,
     redirect: '/verification/index',
     children: [{
       path: 'index',
       name: 'VerificationWorkbench',
       component: () => import('@/views/verification/index'),
-      meta: { title: '链下验证', icon: 'el-icon-circle-check', roles: ['admin', 'user'] }
+      meta: { title: '旧版跨链验证', icon: 'el-icon-circle-check', roles: ['admin', 'user'] }
     }]
   },
   // {

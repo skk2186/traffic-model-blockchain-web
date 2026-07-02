@@ -4,6 +4,7 @@ export const BCOS3_VERIFY_PATH = 'payment.bcos3.TrafficVerifyStore'
 export const FABRIC_VERIFY_PATH = 'payment.fabric.traffic_verify_store'
 
 export const VERIFY_TYPES = {
+  MERKLE: 'MERKLE',
   ZKP: 'ZKP',
   THRESHOLD_SIGNATURE: 'THRESHOLD_SIGNATURE'
 }
