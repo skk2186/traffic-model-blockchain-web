@@ -228,7 +228,7 @@
 </template>
 
 <script>
-import { getCrossVerificationHealth, verifyMerkle } from '@/api/crossVerification'
+import { getCrossVerificationHealth, updateVerificationRecordLedger, verifyMerkle } from '@/api/crossVerification'
 import {
   BCOS3_VERIFY_PATH,
   FABRIC_VERIFY_PATH,
@@ -489,6 +489,7 @@ export default {
           this.result = nextResult
           if (nextResult.status === 'PASS') {
             nextResult = await this.syncMerkleLedger(nextResult)
+            await this.persistLedgerState(nextResult)
           }
           this.result = nextResult
           saveRecentRecord(buildLocalRecord(this.result))
@@ -538,6 +539,17 @@ export default {
       if (response.ledgerStatus) return response.ledgerStatus
       if (ledger.status) return ledger.status
       return 'PENDING'
+    },
+    async persistLedgerState(result) {
+      if (!result || !result.recordId || !result.ledger) return
+      try {
+        await updateVerificationRecordLedger(result.recordId, {
+          ledger: result.ledger,
+          chainVerification: result.chainVerification || null
+        })
+      } catch (error) {
+        console.warn('[Merkle ledger record update]', error)
+      }
     },
     async syncMerkleLedger(result) {
       const record = this.buildMerkleLedgerRecord(result)
@@ -655,7 +667,7 @@ export default {
       })
     },
     assertTxSuccess(result, title) {
-      if (result && result.success) return
+      if (result && result.success && result.txhash) return
       const error = new Error(title + '失败')
       error.result = result
       throw error

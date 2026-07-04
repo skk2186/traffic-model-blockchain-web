@@ -26,18 +26,22 @@
                 <el-input
                   v-model.trim="form.businessId"
                   placeholder="请输入业务标识，例如 traffic-proof-001"
-                />
+                >
+                  <el-button slot="append" @click="generateBusinessId">生成</el-button>
+                </el-input>
               </el-form-item>
 
               <el-form-item label="证明算法">
                 <el-input v-model="form.algorithm" readonly />
               </el-form-item>
 
-              <el-form-item label="电路标识" prop="circuitId">
+              <el-form-item label="零知识证明规则" prop="circuitId">
                 <el-input
                   v-model.trim="form.circuitId"
-                  placeholder="请输入电路标识，例如 traffic-speed-range-v1"
-                />
+                  placeholder="选择或生成证明规则，例如：证明车速处于规定范围"
+                >
+                  <el-button slot="append" @click="generateZkpTestData">生成测试数据</el-button>
+                </el-input>
               </el-form-item>
 
               <el-form-item label="证明数据">
@@ -50,7 +54,7 @@
 
               <el-form-item
                 v-if="form.proofInputMode === 'paste' || form.proofInputMode === 'example'"
-                label="证明 JSON"
+                label="Groth16 证明值"
                 prop="proofText"
               >
                 <el-input
@@ -58,7 +62,7 @@
                   class="json-textarea"
                   type="textarea"
                   :rows="8"
-                  placeholder="请粘贴证明 JSON"
+                  placeholder="请输入证明工具生成的 piA、piB、piC 证明值"
                   @input="clearInputError"
                 />
                 <el-button
@@ -100,18 +104,18 @@
                 </dl>
               </template>
 
-              <el-form-item label="公开输入" prop="publicSignalsText">
+              <el-form-item label="公开验证条件" prop="publicSignalsText">
                 <el-input
                   v-model="form.publicSignalsText"
                   class="json-textarea public-signals"
                   type="textarea"
                   :rows="5"
-                  placeholder="请输入公开输入 JSON，例如 [42, 60]"
+                  placeholder="请输入验证者可以知道的条件，例如速度上限、数据摘要"
                   @input="clearInputError"
                 />
               </el-form-item>
 
-              <el-form-item label="公开输入 Hash" prop="publicInputHash">
+              <el-form-item label="公开条件 Hash" prop="publicInputHash">
                 <el-input
                   v-model.trim="form.publicInputHash"
                   placeholder="可选，64 位十六进制字符串"
@@ -182,11 +186,13 @@
 </template>
 
 <script>
-import { getCrossVerificationHealth, verifyZkp } from '@/api/crossVerification'
+import { getCrossVerificationHealth, updateVerificationRecordLedger, verifyZkp } from '@/api/crossVerification'
 import JsonResultDialog from './components/JsonResultDialog'
 import LedgerTargetSelector from './components/LedgerTargetSelector'
 import VerificationResultPanel from './components/VerificationResultPanel'
 import { formatBytes } from './utils/fileChunkUtils'
+import { BCOS3_VERIFY_PATH, VERIFY_TYPES } from '@/api/trafficVerifyChain'
+import { syncCrossChainVerification } from './utils/crossChainVerification'
 import { buildLocalRecord, isHex64, saveRecentRecord } from './utils/verificationUtils'
 
 const EXAMPLE_PROOF = {
@@ -232,7 +238,7 @@ export default {
         callback()
         return
       }
-      const parsed = this.parseJson(value, '公开输入格式错误，请检查 JSON 内容。')
+      const parsed = this.parseJson(value, '公开验证条件格式错误，请检查 JSON 内容。')
       if (!parsed.ok) {
         callback(new Error(parsed.message))
         return
@@ -253,7 +259,7 @@ export default {
       form: this.createForm(),
       rules: {
         businessId: [{ required: true, message: '请输入业务标识', trigger: 'blur' }],
-        circuitId: [{ required: true, message: '请输入电路标识', trigger: 'blur' }],
+        circuitId: [{ required: true, message: '请输入零知识证明规则', trigger: 'blur' }],
         proofText: [{ validator: validateProofText, trigger: 'blur' }],
         publicSignalsText: [{ validator: validatePublicSignals, trigger: 'blur' }],
         publicInputHash: [{ validator: validatePublicInputHash, trigger: 'blur' }]
@@ -290,12 +296,23 @@ export default {
         proofText: '',
         publicSignalsText: '',
         publicInputHash: '',
-        writeLedger: false,
+        writeLedger: true,
         ledgerTargets: {
-          network: '',
-          resourcePath: ''
+          network: 'payment.bcos3',
+          resourcePath: BCOS3_VERIFY_PATH
         }
       }
+    },
+    generateBusinessId() {
+      this.form.businessId = `traffic-proof-${Date.now()}`
+      this.$nextTick(() => this.$refs.form.validateField('businessId'))
+    },
+    generateZkpTestData() {
+      if (!this.form.businessId) this.generateBusinessId()
+      this.form.circuitId = 'traffic-speed-range-v1'
+      this.form.proofInputMode = 'example'
+      this.fillExampleProof()
+      this.$message.success('ZKP 测试数据已生成')
     },
     async checkHealth() {
       this.healthStatus = 'unchecked'
@@ -395,8 +412,17 @@ export default {
         this.submitError = ''
         try {
           const response = await verifyZkp(payload)
-          this.result = this.normalizeResult(response, payload)
-          saveRecentRecord(buildLocalRecord(this.result))
+          let nextResult = this.normalizeResult(response, payload)
+          this.result = nextResult
+          saveRecentRecord(buildLocalRecord(nextResult))
+          if (nextResult.status === 'PASS' && this.form.writeLedger) {
+            nextResult = await syncCrossChainVerification(nextResult, VERIFY_TYPES.ZKP, current => {
+              this.result = current
+            })
+            this.result = nextResult
+            await this.persistLedgerState(nextResult)
+            saveRecentRecord(buildLocalRecord(nextResult))
+          }
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
@@ -420,7 +446,7 @@ export default {
 
       const publicSignalsText = String(this.form.publicSignalsText || '').trim()
       const publicSignals = publicSignalsText
-        ? this.parseJson(publicSignalsText, '公开输入格式错误，请检查 JSON 内容。')
+        ? this.parseJson(publicSignalsText, '公开验证条件格式错误，请检查 JSON 内容。')
         : { ok: true, value: null }
       if (!publicSignals.ok) {
         this.inputError = publicSignals.message
@@ -432,6 +458,10 @@ export default {
         this.inputError = '同步到可信账本时，请选择目标验证合约。'
         return null
       }
+      if (this.form.writeLedger && ledgerTargets[0] !== BCOS3_VERIFY_PATH) {
+        this.inputError = '当前跨链流程要求先写入 payment.bcos3.TrafficVerifyStore。'
+        return null
+      }
 
       this.inputError = ''
       return {
@@ -440,13 +470,24 @@ export default {
         proof: proof.value,
         publicSignals: publicSignals.value,
         publicInputHash: this.form.publicInputHash || undefined,
-        writeLedger: this.form.writeLedger,
-        ledgerTargets
+        writeLedger: false,
+        ledgerTargets: []
       }
     },
     buildLedgerTargets() {
       const target = this.form.ledgerTargets && this.form.ledgerTargets.resourcePath
       return target ? [target] : []
+    },
+    async persistLedgerState(result) {
+      if (!result || !result.recordId || !result.ledger) return
+      try {
+        await updateVerificationRecordLedger(result.recordId, {
+          ledger: result.ledger,
+          chainVerification: result.chainVerification || null
+        })
+      } catch (error) {
+        console.warn('[ZKP ledger record update]', error)
+      }
     },
     normalizeResult(response, payload) {
       const detail = Object.assign({}, response.detail || {})
@@ -480,6 +521,16 @@ export default {
       }
       if (result.status === 'FAIL') {
         this.$message.warning(result.message || '隐私证明验证未通过')
+        return
+      }
+      const ledger = result.ledger || {}
+      const chain = result.chainVerification || {}
+      if (this.form.writeLedger && ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
+        this.$message.success('隐私证明验证完成，可信账本同步和 Fabric 跨链验证成功')
+        return
+      }
+      if (this.form.writeLedger && (ledger.status === 'FAILED' || chain.status === 'FAILED')) {
+        this.$message.warning(chain.message || ledger.message || '隐私证明验证通过，但跨链同步未完成')
         return
       }
       this.$message.success('隐私证明验证完成')

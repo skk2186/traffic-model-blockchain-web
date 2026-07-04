@@ -305,8 +305,8 @@ export function parseTxResult(response) {
   const result = parseWeCrossResult(response)
   const errorCode = responseErrorCode(response)
   const innerErrorCode = nestedResponseErrorCode(response)
-  const txhash = findField(result, ['txhash', 'txHash', 'transactionHash', 'transaction_hash'], 0)
-  const blockNum = findField(result, ['blockNum', 'blockNumber', 'block_number'], 0)
+  const txhash = findField(response, ['txhash', 'txHash', 'transactionHash', 'transaction_hash', 'hash'], 0)
+  const blockNum = findField(response, ['blockNum', 'blockNumber', 'block_number'], 0)
   return {
     success: errorCode === 0 && innerErrorCode === 0,
     txhash: txhash == null ? null : txhash,

@@ -90,7 +90,9 @@ export default {
         ...this.extraRows,
         { label: '结果 Hash', value: this.getResultHash(), tooltip: true, wide: true },
         { label: '可信账本同步状态', tag: this.ledgerStatus },
-        { label: '交易哈希', value: this.getTxHash(), tooltip: true, wide: true }
+        { label: '交易哈希', value: this.getTxHash(), tooltip: true, wide: true },
+        { label: 'Fabric 跨链验证状态', tag: this.getChainVerificationStatus() },
+        { label: 'Fabric 跨链交易哈希', value: this.getChainVerificationTxHash(), tooltip: true, wide: true }
       ]
     }
   },
@@ -130,7 +132,7 @@ export default {
       const publicInputHash = this.getPublicInputHash()
       const thresholdRows = this.getThresholdRows()
       if (circuitId) {
-        rows.push({ label: '电路标识', value: circuitId, tooltip: true })
+        rows.push({ label: '零知识证明规则', value: circuitId, tooltip: true })
       }
       thresholdRows.forEach(item => rows.push(item))
       if (merkleRoot) {
@@ -146,7 +148,7 @@ export default {
         rows.push({ label: '证明 Hash', value: proofHash, tooltip: true, wide: true })
       }
       if (publicInputHash) {
-        rows.push({ label: '公开输入 Hash', value: publicInputHash, tooltip: true, wide: true })
+        rows.push({ label: '公开条件 Hash', value: publicInputHash, tooltip: true, wide: true })
       }
       return rows
     },
@@ -207,6 +209,14 @@ export default {
         this.result.transactionHash ||
         (ledger && (ledger.txHash || ledger.transactionHash)) ||
         ''
+    },
+    getChainVerificationStatus() {
+      const chain = this.result && this.result.chainVerification
+      return formatLedgerStatus(chain && chain.status ? chain.status : 'DISABLED')
+    },
+    getChainVerificationTxHash() {
+      const chain = this.result && this.result.chainVerification
+      return chain && (chain.txHash || chain.transactionHash) || ''
     },
     copyRecordId() {
       if (!this.recordId) return

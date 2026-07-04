@@ -42,7 +42,7 @@ module.exports = {
         changeOrigin: true
       },
       '/api/cross-verification': {
-        target: 'http://127.0.0.1:8088',
+        target: process.env.VUE_APP_VERIFICATION_TARGET || 'http://127.0.0.1:8088',
         changeOrigin: true
       },
       '/': {

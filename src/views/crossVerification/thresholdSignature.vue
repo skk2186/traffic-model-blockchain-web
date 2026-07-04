@@ -26,16 +26,18 @@
                 <el-input
                   v-model.trim="form.businessId"
                   placeholder="请输入业务标识，例如 traffic-signature-001"
-                />
+                >
+                  <el-button slot="append" @click="generateBusinessId">生成</el-button>
+                </el-input>
               </el-form-item>
 
-              <el-form-item label="待验证消息" prop="message">
+              <el-form-item label="待签名业务内容" prop="message">
                 <el-input
                   v-model="form.message"
                   class="message-textarea"
                   type="textarea"
                   :rows="4"
-                  placeholder="请输入需要进行多方签名验证的业务消息或摘要。"
+                  placeholder="请输入各参与节点共同确认并签名的业务内容。"
                   @input="clearInputError"
                 />
               </el-form-item>
@@ -74,15 +76,23 @@
                 <div class="input-hint">使用英文逗号分隔，例如 1,2,4。</div>
               </el-form-item>
 
-              <el-form-item label="签名数据" prop="signatureBundleText">
+              <el-form-item label="门限签名凭证" prop="signatureBundleText">
                 <el-input
                   v-model="form.signatureBundleText"
                   class="signature-textarea"
                   type="textarea"
                   :rows="7"
-                  placeholder="请输入签名数据，可为 JSON、Base64 或后端约定格式。"
+                  placeholder="请输入各节点部分签名和聚合签名组成的凭证。"
                   @input="clearInputError"
                 />
+                <el-button
+                  class="example-button"
+                  size="small"
+                  type="primary"
+                  plain
+                  icon="el-icon-document-add"
+                  @click="generateSignatureTestData"
+                >生成测试数据</el-button>
               </el-form-item>
 
               <el-form-item label="可信账本同步">
@@ -149,10 +159,12 @@
 </template>
 
 <script>
-import { getCrossVerificationHealth, verifyThresholdSignature } from '@/api/crossVerification'
+import { getCrossVerificationHealth, updateVerificationRecordLedger, verifyThresholdSignature } from '@/api/crossVerification'
 import JsonResultDialog from './components/JsonResultDialog'
 import LedgerTargetSelector from './components/LedgerTargetSelector'
 import VerificationResultPanel from './components/VerificationResultPanel'
+import { BCOS3_VERIFY_PATH, VERIFY_TYPES } from '@/api/trafficVerifyChain'
+import { syncCrossChainVerification } from './utils/crossChainVerification'
 import { buildLocalRecord, saveRecentRecord } from './utils/verificationUtils'
 
 const DEFAULT_SIGNATURE_BUNDLE = {
@@ -199,7 +211,7 @@ export default {
     }
     const validateSignatureBundle = (rule, value, callback) => {
       if (!String(value || '').trim()) {
-        callback(new Error('请输入签名数据'))
+        callback(new Error('请输入门限签名凭证'))
         return
       }
       callback()
@@ -211,7 +223,7 @@ export default {
       form: this.createForm(),
       rules: {
         businessId: [{ required: true, message: '请输入业务标识', trigger: 'blur' }],
-        message: [{ required: true, message: '请输入待验证消息', trigger: 'blur' }],
+        message: [{ required: true, message: '请输入待签名业务内容', trigger: 'blur' }],
         totalNodes: [{ validator: validatePositiveNumber, trigger: 'change' }],
         threshold: [{ validator: validateThreshold, trigger: 'change' }],
         participantIdsText: [{ validator: validateParticipantIds, trigger: 'blur' }],
@@ -246,12 +258,27 @@ export default {
         threshold: 3,
         participantIdsText: '1,2,3',
         signatureBundleText: JSON.stringify(DEFAULT_SIGNATURE_BUNDLE, null, 2),
-        writeLedger: false,
+        writeLedger: true,
         ledgerTargets: {
-          network: '',
-          resourcePath: ''
+          network: 'payment.bcos3',
+          resourcePath: BCOS3_VERIFY_PATH
         }
       }
+    },
+    generateBusinessId() {
+      this.form.businessId = `traffic-signature-${Date.now()}`
+      this.$nextTick(() => this.$refs.form.validateField('businessId'))
+    },
+    generateSignatureTestData() {
+      if (!this.form.businessId) this.generateBusinessId()
+      this.form.message = `交通数据批次 ${this.form.businessId} 已通过多方确认`
+      this.form.totalNodes = 5
+      this.form.threshold = 3
+      this.form.participantIdsText = '1,2,3'
+      this.form.signatureBundleText = JSON.stringify(DEFAULT_SIGNATURE_BUNDLE, null, 2)
+      this.clearInputError()
+      this.$nextTick(() => this.$refs.form.clearValidate())
+      this.$message.success('多方签名测试数据已生成')
     },
     async checkHealth() {
       this.healthStatus = 'unchecked'
@@ -296,22 +323,22 @@ export default {
     parseSignatureBundle(value) {
       const text = String(value || '').trim()
       if (!text) {
-        return { ok: false, message: '签名数据不能为空。' }
+        return { ok: false, message: '门限签名凭证不能为空。' }
       }
       try {
         const parsed = JSON.parse(text)
         if (parsed == null) {
-          return { ok: false, message: '签名数据不能为空。' }
+          return { ok: false, message: '门限签名凭证不能为空。' }
         }
         if (Array.isArray(parsed)) {
           return parsed.length
             ? { ok: true, value: { signatures: parsed }}
-            : { ok: false, message: '签名数据不能为空。' }
+            : { ok: false, message: '门限签名凭证不能为空。' }
         }
         if (typeof parsed === 'object') {
           return Object.keys(parsed).length
             ? { ok: true, value: parsed }
-            : { ok: false, message: '签名数据不能为空。' }
+            : { ok: false, message: '门限签名凭证不能为空。' }
         }
         return { ok: true, value: { signature: String(parsed) }}
       } catch (error) {
@@ -332,8 +359,17 @@ export default {
         this.submitError = ''
         try {
           const response = await verifyThresholdSignature(payload)
-          this.result = this.normalizeResult(response, payload)
-          saveRecentRecord(buildLocalRecord(this.result))
+          let nextResult = this.normalizeResult(response, payload)
+          this.result = nextResult
+          saveRecentRecord(buildLocalRecord(nextResult))
+          if (nextResult.status === 'PASS' && this.form.writeLedger) {
+            nextResult = await syncCrossChainVerification(nextResult, VERIFY_TYPES.THRESHOLD_SIGNATURE, current => {
+              this.result = current
+            })
+            this.result = nextResult
+            await this.persistLedgerState(nextResult)
+            saveRecentRecord(buildLocalRecord(nextResult))
+          }
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
@@ -369,6 +405,10 @@ export default {
         this.inputError = '同步到可信账本时，请选择目标验证合约。'
         return null
       }
+      if (this.form.writeLedger && ledgerTargets[0] !== BCOS3_VERIFY_PATH) {
+        this.inputError = '当前跨链流程要求先写入 payment.bcos3.TrafficVerifyStore。'
+        return null
+      }
 
       this.inputError = ''
       return {
@@ -378,13 +418,24 @@ export default {
         totalNodes,
         participantIds: participantIds.value,
         signatureBundle: signatureBundle.value,
-        writeLedger: this.form.writeLedger,
-        ledgerTargets
+        writeLedger: false,
+        ledgerTargets: []
       }
     },
     buildLedgerTargets() {
       const target = this.form.ledgerTargets && this.form.ledgerTargets.resourcePath
       return target ? [target] : []
+    },
+    async persistLedgerState(result) {
+      if (!result || !result.recordId || !result.ledger) return
+      try {
+        await updateVerificationRecordLedger(result.recordId, {
+          ledger: result.ledger,
+          chainVerification: result.chainVerification || null
+        })
+      } catch (error) {
+        console.warn('[Threshold ledger record update]', error)
+      }
     },
     normalizeResult(response, payload) {
       const detail = Object.assign({}, response.detail || {})
@@ -418,6 +469,16 @@ export default {
       }
       if (result.status === 'FAIL') {
         this.$message.warning(result.message || '多方签名验证未通过')
+        return
+      }
+      const ledger = result.ledger || {}
+      const chain = result.chainVerification || {}
+      if (this.form.writeLedger && ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
+        this.$message.success('多方签名验证完成，可信账本同步和 Fabric 跨链验证成功')
+        return
+      }
+      if (this.form.writeLedger && (ledger.status === 'FAILED' || chain.status === 'FAILED')) {
+        this.$message.warning(chain.message || ledger.message || '多方签名验证通过，但跨链同步未完成')
         return
       }
       this.$message.success('多方签名验证完成')
@@ -526,6 +587,9 @@ export default {
 .signature-textarea::v-deep textarea {
   max-height: 220px;
   font: 12px/1.6 Consolas, monospace;
+}
+.example-button {
+  margin-top: 10px;
 }
 .form-alert {
   margin: 0 0 16px 140px;

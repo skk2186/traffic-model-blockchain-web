@@ -40,6 +40,9 @@ export function buildLocalRecord(result) {
     proofHash: current.proofHash || '',
     resultHash: current.resultHash || '',
     ledger: current.ledger || null,
+    ledgerStatus: current.ledgerStatus || (current.ledger && current.ledger.status) || '',
+    chainVerification: current.chainVerification || null,
+    txHash: current.txHash || (current.ledger && current.ledger.txHash) || '',
     detail: current.detail || null,
     timestamp: current.timestamp || new Date().toISOString(),
     raw: current

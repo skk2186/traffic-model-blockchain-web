@@ -101,6 +101,16 @@
           <el-table-column label="交易哈希" min-width="180" show-overflow-tooltip>
             <template slot-scope="{ row }">{{ row.txHash || '-' }}</template>
           </el-table-column>
+          <el-table-column label="跨链状态" width="120" align="center">
+            <template slot-scope="{ row }">
+              <el-tag class="status-tag" :type="crossChainStatusMeta(getCrossChainStatus(row)).type" size="mini">
+                {{ crossChainStatusMeta(getCrossChainStatus(row)).text }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="跨链交易哈希" min-width="180" show-overflow-tooltip>
+            <template slot-scope="{ row }">{{ getCrossChainTxHash(row) }}</template>
+          </el-table-column>
           <el-table-column label="创建时间" width="170">
             <template slot-scope="{ row }">
               <span class="nowrap">{{ formatTime(row.createdAt || row.timestamp) }}</span>
@@ -120,7 +130,7 @@
             :current-page="pagination.page"
             :page-size="pagination.size"
             :page-sizes="[10, 20, 50, 100]"
-            :total="pagination.total"
+            :total="Math.max(pagination.total, records.length)"
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="handleSizeChange"
             @current-change="handlePageChange"
@@ -182,13 +192,14 @@
 
 <script>
 import { getVerificationRecord, listVerificationRecords } from '@/api/crossVerification'
-import { copyText } from './utils/verificationUtils'
+import { copyText, loadRecentRecords } from './utils/verificationUtils'
 
 export default {
   name: 'VerificationRecords',
   data() {
     return {
       loading: false,
+      hasLoaded: false,
       loadError: '',
       filters: this.createFilters(),
       records: [],
@@ -226,6 +237,9 @@ export default {
   created() {
     this.fetchRecords()
   },
+  activated() {
+    if (this.hasLoaded) this.fetchRecords()
+  },
   methods: {
     createFilters() {
       return {
@@ -261,6 +275,7 @@ export default {
         this.$message.error(this.loadError)
       } finally {
         this.loading = false
+        this.hasLoaded = true
       }
     },
     normalizeListResponse(response) {
@@ -273,13 +288,44 @@ export default {
         }
       }
       const source = response || {}
-      const records = this.pickRecords(source)
+      const serverRecords = this.pickRecords(source)
+      const localRecords = loadRecentRecords().filter(record => this.matchesFilters(record))
+      const records = this.mergeRecords(serverRecords, localRecords)
       return {
         records,
         page: Number(source.page || source.current || this.pagination.page),
         size: Number(source.size || source.pageSize || this.pagination.size),
-        total: Number(source.total != null ? source.total : records.length)
+        total: Math.max(Number(source.total != null ? source.total : 0), records.length)
       }
+    },
+    matchesFilters(record) {
+      if (this.filters.verifyType && record.verifyType !== this.filters.verifyType) return false
+      if (this.filters.status && record.status !== this.filters.status) return false
+      if (this.filters.businessId && !String(record.businessId || '').includes(this.filters.businessId)) return false
+      return true
+    },
+    mergeRecords(serverRecords, localRecords) {
+      const localById = new Map(localRecords.map(item => [item.recordId, item]))
+      const records = serverRecords.map(serverRecord => {
+        const localRecord = localById.get(serverRecord.recordId)
+        if (!localRecord) return serverRecord
+        localById.delete(serverRecord.recordId)
+        const ledger = Object.assign({}, localRecord.ledger || {}, serverRecord.ledger || {})
+        const chainVerification = serverRecord.chainVerification || localRecord.chainVerification || null
+        return Object.assign({}, localRecord, serverRecord, {
+          ledger,
+          ledgerStatus: serverRecord.ledgerStatus === 'DISABLED'
+            ? (localRecord.ledgerStatus || ledger.status || serverRecord.ledgerStatus)
+            : (serverRecord.ledgerStatus || localRecord.ledgerStatus || ledger.status),
+          txHash: serverRecord.txHash || localRecord.txHash || ledger.txHash || '',
+          chainVerification,
+          crossChainStatus: serverRecord.crossChainStatus || localRecord.crossChainStatus || (chainVerification && chainVerification.status) || '',
+          crossChainTxHash: serverRecord.crossChainTxHash || localRecord.crossChainTxHash || (chainVerification && chainVerification.txHash) || '',
+          detail: serverRecord.detail || localRecord.detail || null
+        })
+      })
+      localById.forEach(record => records.push(record))
+      return records.sort((a, b) => Number(b.createdAt || Date.parse(b.timestamp) || 0) - Number(a.createdAt || Date.parse(a.timestamp) || 0))
     },
     pickRecords(source) {
       if (Array.isArray(source.records)) return source.records
@@ -363,6 +409,22 @@ export default {
         LEDGER_FAILED: { text: '同步失败', type: 'danger' }
       }
       return statusMap[status] || { text: status || '未启用同步', type: 'info' }
+    },
+    crossChainStatusMeta(status) {
+      const statusMap = {
+        SUCCESS: { text: '跨链成功', type: 'success' },
+        FAILED: { text: '跨链失败', type: 'danger' },
+        PENDING: { text: '跨链中', type: 'warning' }
+      }
+      return statusMap[status] || { text: '未执行', type: 'info' }
+    },
+    getCrossChainStatus(record) {
+      const chain = record && record.chainVerification
+      return record.crossChainStatus || (chain && chain.status) || ''
+    },
+    getCrossChainTxHash(record) {
+      const chain = record && record.chainVerification
+      return record.crossChainTxHash || (chain && chain.txHash) || '-'
     },
     getLedgerStatus(record) {
       const ledger = record && record.ledger

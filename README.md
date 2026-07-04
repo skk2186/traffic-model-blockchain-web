@@ -481,26 +481,25 @@ cross-verification-history
 
 ### 7.2 ZKP 与多方签名当前流程
 
-隐私证明验证和多方签名验证当前只做：
+ZKP 和多方签名验证已与 Merkle 对齐：
 
-1. 收集参数。
-2. 校验参数。
-3. 选择是否同步可信账本。
-4. 将 `writeLedger` 和 `ledgerTargets` 传给后端验证接口。
-5. 展示后端返回的验证结果和账本状态。
+1. 调用后端完成链下验证并创建验证记录，后端请求固定 `writeLedger=false`，避免缺失网关时停留在 `PENDING`。
+2. 验证状态为 `PASS` 且页面开启可信账本同步时，调用共享的 `syncCrossChainVerification`。
+3. 通过 `payment.bcos3.TrafficVerifyStore.setRecord` 写入对应 `ZKP` 或 `THRESHOLD_SIGNATURE` 记录。
+4. 轮询 `getRecordWithStatus` 确认 BCOS3 记录可查询。
+5. 通过 `payment.fabric.traffic_verify_store.interchain` 发起跨链查询。
+6. 调用 `waitLastCallbackResult` 确认 Fabric 回调记录。
+7. 调用 `PUT /api/cross-verification/records/{recordId}/ledger`，把账本交易哈希和跨链状态回写后端记录。
+8. 页面分别展示链下验证、可信账本同步和 Fabric 跨链验证状态。
 
-这两个页面目前不直接调用 `writeVerifyRecord`、`interchainQueryRecord` 或 `waitLastCallbackResult`。
+三类验证目前统一采用 BCOS3 写入、Fabric 发起跨链验证的方向。
 
 ### 7.3 后续需要统一的问题
 
-后续必须明确以下问题：
-
-- 三类验证是否都由后端统一写账本。
-- 如果后端统一写账本，Merkle 页面是否删除前端写账本逻辑。
-- 如果前端继续负责写账本，ZKP 和多方签名是否也要补齐与 Merkle 一致的链上流程。
-- 链上记录结构是否三类验证统一。
-- 跨链查询由哪条链发起，目标链是否固定。
-- 回调查询是否只使用 `getLastCallbackResult`，是否可能被并发验证互相覆盖。
+- 将浏览器端跨链编排迁移到可信后端服务，避免依赖用户页面保持在线。
+- 为多个并发验证提供按 `recordKey` 隔离的回调查询，避免仅使用最后一次回调。
+- 将内存验证记录替换为数据库持久化。
+- 接入真实 Groth16 与真实分布式门限签名验签实现。
 
 ## 8. 后端接口待确认清单
 

@@ -45,3 +45,10 @@ export function getVerificationRecord(recordId) {
     method: 'get'
   })
 }
+export function updateVerificationRecordLedger(recordId, data) {
+  return request({
+    url: `/api/cross-verification/records/${recordId}/ledger`,
+    method: 'put',
+    data
+  })
+}

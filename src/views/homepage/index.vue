@@ -203,6 +203,19 @@ import { listChains, listPeers, listZones } from '@/api/conn'
 import { getResourceList } from '@/api/resource'
 import ResourceShower from '@/components/ResourceShower'
 
+function readSessionCache(key, fallback) {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(key))
+    return value == null ? fallback : value
+  } catch (error) {
+    return fallback
+  }
+}
+
+function writeSessionCache(key, value) {
+  sessionStorage.setItem(key, JSON.stringify(value))
+}
+
 export default {
   name: 'Homepage',
   components: { ResourceShower },
@@ -210,14 +223,17 @@ export default {
   data() {
     return {
       chainsInfoLoading: false,
-      systemInfo: {},
-      routerInfo: {},
-      chainsInfo: [],
-      chainNumber: 0,
-      routerNumber: 0,
-      resourceNumber: 0,
+      systemInfo: readSessionCache('homepage-system-info', {}),
+      routerInfo: readSessionCache('homepage-router-info', {}),
+      chainsInfo: readSessionCache('homepage-chains-info', []),
+      chainNumber: readSessionCache('homepage-chain-count', 0),
+      routerNumber: readSessionCache('homepage-peer-count', 0),
+      chainLoadAttempts: 0,
+      peerLoadAttempts: 0,
+      resourceNumber: readSessionCache('homepage-resource-count', 0),
       baseDataRefreshing: false,
       infrastructureRefreshing: false,
+      initialLoadTimer: null,
       transactionType: [
         {
           label: 'XA 两阶段事务',
@@ -257,7 +273,7 @@ export default {
         {
           title: '协同链网络',
           icon: 'el-icon-share',
-          value: this.chainNumber,
+          value: this.chainsInfo.length || this.chainNumber,
           unit: '条',
           desc: '已接入的底层区块链网络',
           path: 'transaction'
@@ -344,9 +360,14 @@ export default {
       return version === '-' ? name : name + ' ' + version
     }
   },
-  created() {
-    this.refreshBaseData()
-    this.refreshChainsInfo()
+  mounted() {
+    this.initialLoadTimer = setTimeout(() => {
+      this.refreshBaseData()
+      this.refreshChainsInfo()
+    }, 600)
+  },
+  beforeDestroy() {
+    if (this.initialLoadTimer) clearTimeout(this.initialLoadTimer)
   },
   methods: {
     displayValue(value) {
@@ -380,7 +401,7 @@ export default {
       this.baseDataRefreshing = true
       return Promise.all([
         this.refreshInfrastructureInfo(false),
-        this.getChainNumber(),
+
         this.getRouterNumber(),
         this.getResourceNumber()
       ]).finally(() => {
@@ -402,12 +423,13 @@ export default {
     },
     refreshSystemInfo() {
       return systemStatus().then(response => {
-        if (!response.data) {
+        if (!response.data || Object.keys(response.data).length === 0) {
           this.$message.error('本地系统信息返回为空，请检查后台信息')
           this.setRequestStatus('system', false)
           return
         }
         this.systemInfo = response.data
+        writeSessionCache('homepage-system-info', response.data)
         this.setRequestStatus('system', true)
       }).catch(_ => {
         this.$message({
@@ -419,12 +441,13 @@ export default {
     },
     refreshRouterInfo() {
       return routerStatus().then(response => {
-        if (!response.data) {
+        if (!response.data || Object.keys(response.data).length === 0) {
           this.$message.error('路由信息返回为空，请检查后台信息')
           this.setRequestStatus('router', false)
           return
         }
         this.routerInfo = response.data
+        writeSessionCache('homepage-router-info', response.data)
         this.setRequestStatus('router', true)
       }).catch(_ => {
         this.$message({
@@ -436,7 +459,7 @@ export default {
     },
     refreshChainsInfo() {
       this.chainsInfoLoading = true
-      this.chainsInfo = []
+
       return listZones(null).then(response => {
         const zones = response.data && response.data.data ? response.data.data : []
         return Promise.all(zones.map(zone => listChains({ zone: zone })))
@@ -452,8 +475,17 @@ export default {
             })
           })
         })
+        if (chainsInfo.length === 0 && this.chainLoadAttempts < 2) {
+          this.chainLoadAttempts += 1
+          setTimeout(() => this.refreshChainsInfo(), 800)
+          return
+        }
+        this.chainLoadAttempts = 0
+        if (chainsInfo.length === 0 && this.chainNumber > 0) return
         this.chainsInfo = chainsInfo
+        writeSessionCache('homepage-chains-info', chainsInfo)
         this.chainNumber = chainsInfo.length
+        writeSessionCache('homepage-chain-count', chainsInfo.length)
         this.setRequestStatus('chains', true)
       }).catch(_ => {
         this.$message({
@@ -488,7 +520,15 @@ export default {
     getRouterNumber() {
       return listPeers(null).then(response => {
         const peers = response.data && response.data.data ? response.data.data : []
+        if (peers.length === 0 && this.peerLoadAttempts < 2) {
+          this.peerLoadAttempts += 1
+          setTimeout(() => this.getRouterNumber(), 800)
+          return
+        }
+        this.peerLoadAttempts = 0
+        if (peers.length === 0 && this.routerNumber > 0) return
         this.routerNumber = peers.length
+        writeSessionCache('homepage-peer-count', peers.length)
         this.setRequestStatus('peers', true)
       }).catch(_ => {
         this.$message({
@@ -507,6 +547,7 @@ export default {
       }).then(response => {
         const resourceDetails = response.data && response.data.resourceDetails ? response.data.resourceDetails : []
         this.resourceNumber = resourceDetails.length
+        writeSessionCache('homepage-resource-count', resourceDetails.length)
         this.setRequestStatus('resources', true)
       }).catch(_ => {
         this.$message({
