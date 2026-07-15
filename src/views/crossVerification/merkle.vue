@@ -4,13 +4,13 @@
       <header class="page-header cross-verification-header">
         <div>
           <h2>数据完整性验证</h2>
-          <p>基于 Merkle 结构验证交通数据批次、文件或记录集合的一致性。</p>
+          <p>验证交通数据有没有被篡改</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
       </header>
 
-      <el-row :gutter="18">
-        <el-col :xs="24" :lg="10">
+      <el-row class="verification-workspace" :gutter="18">
+        <el-col :xs="24" :lg="9">
           <section class="form-panel">
             <div class="section-title">
               <h3>验证参数</h3>
@@ -19,7 +19,7 @@
               ref="form"
               :model="form"
               :rules="rules"
-              label-width="140px"
+              label-position="top"
               class="merkle-form cross-verification-form"
             >
               <el-form-item label="业务标识" prop="businessId">
@@ -83,7 +83,16 @@
                   placeholder="每一行作为一个 Merkle 叶子"
                   @input="clearInputError"
                 />
-                <div class="input-hint">每一行作为一个 Merkle 叶子。</div>
+                <div class="field-extra-actions">
+                  <el-button
+                    size="small"
+                    type="primary"
+                    plain
+                    class="test-data-button"
+                    icon="el-icon-document-add"
+                    @click="generateMerkleTestData"
+                  >生成测试数据</el-button>
+                </div>
               </el-form-item>
 
               <el-form-item label="抽样索引" prop="sampleIndex">
@@ -91,27 +100,15 @@
                   v-model.trim="form.sampleIndex"
                   placeholder="可选，必须小于叶子数量"
                 />
-                <div class="input-hint">
+                <!-- <div class="input-hint">
                   抽样索引用于指定需要重点核验的叶子位置，从 0 开始；留空时按整批数据生成 Merkle Root。当前叶子数量：{{ leafItems.length }}
-                </div>
+                </div> -->
               </el-form-item>
 
               <el-form-item label="期望 Merkle Root" prop="expectedRoot">
                 <el-input
                   v-model.trim="form.expectedRoot"
                   placeholder="可选，64 位十六进制字符串"
-                />
-                <div class="input-hint">
-                  期望 Merkle Root 是你已知的基准根哈希；填写后会与本次计算结果比对，用来判断数据是否保持一致。
-                </div>
-              </el-form-item>
-
-              <el-form-item label="可信账本同步">
-                <el-alert
-                  title="验证结果默认同步至 bcos3 可信账本，并通过 fabric 发起跨链验证。"
-                  type="info"
-                  :closable="false"
-                  show-icon
                 />
               </el-form-item>
 
@@ -132,88 +129,28 @@
                   @click="submit"
                 >执行验证</el-button>
                 <el-button icon="el-icon-refresh-left" @click="resetForm">重置表单</el-button>
-                <el-button icon="el-icon-tickets" @click="goRecords">查看验证记录</el-button>
               </div>
             </el-form>
           </section>
         </el-col>
 
-        <el-col :xs="24" :lg="14">
-          <section v-loading="submitting" class="result-panel cross-verification-result">
-            <div class="section-title">
-              <h3>验证结果</h3>
-              <el-tag v-if="result" :type="resultStatusType">{{ resultStatusText }}</el-tag>
-            </div>
-            <div v-if="!result" class="result-empty">
-              <el-empty description="请填写验证参数并执行数据完整性验证。" :image-size="88" />
-              <el-alert
-                v-if="submitError"
-                class="result-error"
-                :title="submitError"
-                type="error"
-                :closable="false"
-                show-icon
-              />
-            </div>
-            <template v-if="result">
-              <dl class="result-meta">
-                <div v-for="item in resultMetaRows" :key="item.label" :class="{ wide: item.wide }">
-                  <dt>{{ item.label }}</dt>
-                  <dd>
-                    <code v-if="item.code">{{ item.value || '-' }}</code>
-                    <span v-else>{{ item.value || '-' }}</span>
-                  </dd>
-                </div>
-              </dl>
-
-              <div class="values">
-                <div v-for="item in resultValueRows" :key="item.label" class="value-row">
-                  <span>{{ item.label }}</span>
-                  <el-tooltip :content="item.value || '-'" placement="top" effect="light">
-                    <code>{{ item.value || '-' }}</code>
-                  </el-tooltip>
-                  <el-button
-                    type="text"
-                    icon="el-icon-document-copy"
-                    title="复制"
-                    :disabled="!item.value"
-                    @click="copyValue(item.value)"
-                  />
-                </div>
-              </div>
-
-              <section class="chain-flow">
-                <div class="section-title chain-flow-title">
-                  <h3>可信账本同步</h3>
-                  <el-button
-                    type="text"
-                    icon="el-icon-view"
-                    @click="openJsonDialog(result)"
-                  >查看完整结果</el-button>
-                </div>
-                <div class="chain-steps">
-                  <div
-                    v-for="step in chainStepItems"
-                    :key="step.title"
-                    class="chain-step"
-                    :class="'is-' + step.state"
-                  >
-                    <i :class="step.icon" />
-                    <div>
-                      <strong>{{ step.title }}</strong>
-                      <span>{{ step.description }}</span>
-                      <code v-if="step.hash">{{ step.hash }}</code>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <el-collapse class="detail-collapse">
-                <el-collapse-item title="查看证明路径与完整详情">
-                  <pre>{{ prettyResult }}</pre>
-                </el-collapse-item>
-              </el-collapse>
-            </template>
+        <el-col :xs="24" :lg="15">
+          <section class="result-panel cross-verification-result">
+            <VerificationResultPanel
+              :result="result"
+              :loading="submitting"
+              title="验证结果"
+              verify-type="merkle"
+              @show-json="openJsonDialog"
+            />
+            <el-alert
+              v-if="submitError"
+              class="result-error"
+              :title="submitError"
+              type="error"
+              :closable="false"
+              show-icon
+            />
           </section>
         </el-col>
       </el-row>
@@ -240,17 +177,20 @@ import {
   writeVerifyRecord
 } from '@/api/trafficVerifyChain'
 import JsonResultDialog from './components/JsonResultDialog'
+import VerificationResultPanel from './components/VerificationResultPanel'
 import { formatBytes, isTextFile, readFileAsChunks, splitTextToBlocks } from './utils/fileChunkUtils'
-import { buildLocalRecord, copyText, isHex64, saveRecentRecord } from './utils/verificationUtils'
+import { isHex64 } from './utils/verificationUtils'
 
-const DEFAULT_MANUAL_TEXT = 'camera=A001,speed=42,lane=2\ncamera=A001,speed=38,lane=2\ncamera=A002,speed=51,lane=1'
+const DEFAULT_MANUAL_TEXT = ''
+const EXAMPLE_MANUAL_TEXT = 'camera=A001,speed=42,lane=2\ncamera=A001,speed=38,lane=2\ncamera=A002,speed=51,lane=1'
 const TARGET_CHAIN = 'bcos3'
 const VERIFY_FROM_CHAIN = 'fabric'
 
 export default {
   name: 'MerkleVerification',
   components: {
-    JsonResultDialog
+    JsonResultDialog,
+    VerificationResultPanel
   },
   data() {
     const validateExpectedRoot = (rule, value, callback) => {
@@ -310,78 +250,6 @@ export default {
         return this.fileLeafItems
       }
       return splitTextToBlocks(this.form.manualText)
-    },
-    resultStatusType() {
-      const status = this.result && this.result.status
-      if (status === 'PASS') return 'success'
-      if (status === 'FAIL' || status === 'ERROR') return 'danger'
-      return 'info'
-    },
-    resultStatusText() {
-      const status = this.result && this.result.status
-      if (status === 'PASS') return '验证通过'
-      if (status === 'FAIL') return '验证未通过'
-      if (status === 'ERROR') return '验证异常'
-      return '状态未知'
-    },
-    resultMetaRows() {
-      if (!this.result) return []
-      const ledger = this.result.ledger || {}
-      return [
-        { label: '验证方式', value: this.result.verifyName || '数据完整性验证' },
-        { label: '算法', value: this.result.algorithm || 'Merkle-SHA256' },
-        { label: '业务标识', value: this.result.businessId, code: true },
-        { label: '生成时间', value: this.formatTime(this.result.timestamp) },
-        { label: '记录 ID', value: this.result.recordId, code: true, wide: true },
-        { label: '可信账本资源', value: ledger.resourcePath || BCOS3_VERIFY_PATH, code: true, wide: true }
-      ]
-    },
-    resultValueRows() {
-      if (!this.result) return []
-      const detail = this.result.detail || {}
-      const ledger = this.result.ledger || {}
-      const chainVerification = this.result.chainVerification || {}
-      return [
-        { label: 'Merkle Root', value: this.getMerkleRoot(this.result) },
-        { label: '输入摘要', value: this.result.inputHash },
-        { label: '证明哈希', value: this.result.proofHash },
-        { label: '结果哈希', value: this.result.resultHash },
-        { label: '抽样叶子', value: detail.leafHash },
-        { label: 'bcos3 交易', value: ledger.txHash },
-        { label: 'fabric 验证', value: chainVerification.txHash }
-      ].filter(item => item.value)
-    },
-    chainStepItems() {
-      const result = this.result || {}
-      const ledger = result.ledger || {}
-      const chainVerification = result.chainVerification || {}
-      const root = this.getMerkleRoot(result)
-      return [
-        {
-          title: '生成 Merkle Root',
-          description: root ? `已按 ${this.getLeafCount(result)} 个叶子生成数据摘要` : '等待生成数据摘要',
-          hash: root,
-          state: result.status === 'ERROR' ? 'error' : root ? 'success' : 'pending',
-          icon: result.status === 'ERROR' ? 'el-icon-warning-outline' : 'el-icon-finished'
-        },
-        {
-          title: '同步至 bcos3',
-          description: ledger.message || '验证通过后自动提交至 bcos3 可信账本',
-          hash: ledger.txHash,
-          state: this.stepState(ledger.status),
-          icon: ledger.status === 'FAILED' ? 'el-icon-warning-outline' : 'el-icon-connection'
-        },
-        {
-          title: 'fabric 验证',
-          description: chainVerification.message || '通过 fabric 发起跨链查询并等待回调结果',
-          hash: chainVerification.txHash,
-          state: this.stepState(chainVerification.status),
-          icon: chainVerification.status === 'FAILED' ? 'el-icon-warning-outline' : 'el-icon-search'
-        }
-      ]
-    },
-    prettyResult() {
-      return this.result ? JSON.stringify(this.result, null, 2) : ''
     }
   },
   created() {
@@ -403,6 +271,16 @@ export default {
         this.$refs.form.validateField('businessId')
       })
     },
+    generateMerkleTestData() {
+      if (!this.form.businessId) this.generateBusinessId()
+      this.form.inputMode = 'manual'
+      this.form.manualText = EXAMPLE_MANUAL_TEXT
+      this.clearInputError()
+      this.$nextTick(() => {
+        this.$refs.form.validateField('sampleIndex')
+      })
+      this.$message.success('数据完整性测试数据已生成')
+    },
     async checkHealth() {
       this.healthStatus = 'unchecked'
       try {
@@ -411,12 +289,6 @@ export default {
       } catch (error) {
         this.healthStatus = 'error'
       }
-    },
-    stepState(status) {
-      if (status === 'SUCCESS' || status === 'LEDGER_SUCCESS' || status === 'PASS') return 'success'
-      if (status === 'FAILED' || status === 'LEDGER_FAILED' || status === 'ERROR') return 'error'
-      if (status === 'PENDING') return 'pending'
-      return 'idle'
     },
     clearInputError() {
       this.inputError = ''
@@ -492,7 +364,6 @@ export default {
             await this.persistLedgerState(nextResult)
           }
           this.result = nextResult
-          saveRecentRecord(buildLocalRecord(this.result))
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
@@ -734,14 +605,6 @@ export default {
       if (error && typeof error.message === 'string' && error.message.trim()) return error.message
       return fallback
     },
-    formatTime(value) {
-      return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
-    },
-    copyValue(value) {
-      copyText(value)
-        .then(() => this.$message.success('已复制'))
-        .catch(() => this.$message.warning('请手动选择文本复制'))
-    },
     resetForm() {
       this.form = this.createForm()
       this.fileList = []
@@ -753,9 +616,6 @@ export default {
       this.$nextTick(() => {
         this.$refs.form.clearValidate()
       })
-    },
-    goRecords() {
-      this.$router.push({ path: '/cross-verification/records' })
     },
     openJsonDialog(data) {
       this.jsonDialogData = data
@@ -822,7 +682,7 @@ export default {
 .file-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0 0 18px 140px;
+  margin: 0 0 18px;
   border-top: 1px solid #ebeef5;
   border-left: 1px solid #ebeef5;
 }
@@ -851,17 +711,22 @@ export default {
   white-space: nowrap;
 }
 .form-alert {
-  margin: 0 0 16px 140px;
+  margin: 0 0 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .form-actions {
   display: flex;
   flex-wrap: nowrap;
-  gap: 10px;
-  margin-left: 140px;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  margin-left: 0;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 .result-panel {
-  min-height: 360px;
+  min-height: 520px;
   padding-left: 18px;
   border-left: 1px solid #ebeef5;
 }
@@ -1034,6 +899,7 @@ pre {
   .form-alert,
   .form-actions {
     margin-left: 0;
+    width: 100%;
   }
   .file-meta {
     grid-template-columns: 1fr;

@@ -4,13 +4,13 @@
       <header class="page-header cross-verification-header">
         <div>
           <h2>多方签名验证</h2>
-          <p>验证多参与方签名是否满足指定阈值要求，适用于多主体协同确认场景。</p>
+          <p>验证是否有足够多节点确认</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
       </header>
 
-      <el-row :gutter="18">
-        <el-col :xs="24" :lg="10">
+      <el-row class="verification-workspace" :gutter="18">
+        <el-col :xs="24" :lg="9">
           <section class="form-panel">
             <div class="section-title">
               <h3>验证参数</h3>
@@ -19,7 +19,7 @@
               ref="form"
               :model="form"
               :rules="rules"
-              label-width="140px"
+              label-position="top"
               class="threshold-form cross-verification-form"
             >
               <el-form-item label="业务标识" prop="businessId">
@@ -37,6 +37,7 @@
                   class="message-textarea"
                   type="textarea"
                   :rows="4"
+                  readonly
                   placeholder="请输入各参与节点共同确认并签名的业务内容。"
                   @input="clearInputError"
                 />
@@ -76,30 +77,25 @@
                 <div class="input-hint">使用英文逗号分隔，例如 1,2,4。</div>
               </el-form-item>
 
-              <el-form-item label="门限签名凭证" prop="signatureBundleText">
+              <el-form-item label="门限签名数据" prop="signatureBundleText">
                 <el-input
                   v-model="form.signatureBundleText"
                   class="signature-textarea"
                   type="textarea"
                   :rows="7"
-                  placeholder="请输入各节点部分签名和聚合签名组成的凭证。"
+                  placeholder="请输入各节点部分签名组成的门限签名数据。"
                   @input="clearInputError"
                 />
-                <el-button
-                  class="example-button"
-                  size="small"
-                  type="primary"
-                  plain
-                  icon="el-icon-document-add"
-                  @click="generateSignatureTestData"
-                >生成测试数据</el-button>
-              </el-form-item>
-
-              <el-form-item label="可信账本同步">
-                <LedgerTargetSelector
-                  :write-ledger.sync="form.writeLedger"
-                  :ledger-targets.sync="form.ledgerTargets"
-                />
+                <div class="field-extra-actions">
+                  <el-button
+                    class="test-data-button"
+                    size="small"
+                    type="primary"
+                    plain
+                    icon="el-icon-document-add"
+                    @click="generateSignatureTestData"
+                  >生成测试数据</el-button>
+                </div>
               </el-form-item>
 
               <el-alert
@@ -119,32 +115,28 @@
                   @click="submit"
                 >执行验证</el-button>
                 <el-button icon="el-icon-refresh-left" @click="resetForm">重置表单</el-button>
-                <el-button icon="el-icon-tickets" @click="goRecords">查看验证记录</el-button>
               </div>
             </el-form>
           </section>
         </el-col>
 
-        <el-col :xs="24" :lg="14">
+        <el-col :xs="24" :lg="15">
           <section class="result-panel cross-verification-result">
             <VerificationResultPanel
-              v-if="result"
               :result="result"
               :loading="submitting"
               title="验证结果"
+              verify-type="threshold"
               @show-json="openJsonDialog"
             />
-            <div v-else class="result-empty">
-              <el-empty description="请填写验证参数并执行多方签名验证。" :image-size="88" />
-              <el-alert
-                v-if="submitError"
-                class="result-error"
-                :title="submitError"
-                type="error"
-                :closable="false"
-                show-icon
-              />
-            </div>
+            <el-alert
+              v-if="submitError"
+              class="result-error"
+              :title="submitError"
+              type="error"
+              :closable="false"
+              show-icon
+            />
           </section>
         </el-col>
       </el-row>
@@ -161,27 +153,24 @@
 <script>
 import { getCrossVerificationHealth, updateVerificationRecordLedger, verifyThresholdSignature } from '@/api/crossVerification'
 import JsonResultDialog from './components/JsonResultDialog'
-import LedgerTargetSelector from './components/LedgerTargetSelector'
 import VerificationResultPanel from './components/VerificationResultPanel'
-import { BCOS3_VERIFY_PATH, VERIFY_TYPES } from '@/api/trafficVerifyChain'
+import { VERIFY_TYPES } from '@/api/trafficVerifyChain'
 import { syncCrossChainVerification } from './utils/crossChainVerification'
-import { buildLocalRecord, saveRecentRecord } from './utils/verificationUtils'
 
 const DEFAULT_SIGNATURE_BUNDLE = {
-  aggregateSignature: 'traffic-threshold-signature-value',
+  scheme: 'ECDSA-P256-SHA256',
+  policyId: 'traffic-consortium-dev-local',
   participantSignatures: {
-    1: 'sig-node-1',
-    2: 'sig-node-2',
-    3: 'sig-node-3'
-  },
-  valid: true
+    1: 'MEYCIQDZGjJuxQg1kERy7hsjTKrkGhUYh6MvFJRsq3+mOuXKRgIhAIPgR66H0zawNFKmKWAtnrwrkBJDWwqFz0kyqsX1zfR2',
+    2: 'MEYCIQCcHBTaElgF9ts3Npp5TJ3wNTrWFGbubUDBB5+etQe/sgIhAMhSe37a+JI34jx3u4l7w7cDHR66wcem0vxUFKrApc0w',
+    4: 'MEUCIAHGy0fUeCXEluoP1ujxuC8j6R0UKQZFAQCz8mac9zGJAiEA6nHtcF30dsWvEKICnQJV9onnjpby+YrtNQaYnkN+TbI='
+  }
 }
 
 export default {
   name: 'ThresholdSignatureVerification',
   components: {
     JsonResultDialog,
-    LedgerTargetSelector,
     VerificationResultPanel
   },
   data() {
@@ -211,7 +200,7 @@ export default {
     }
     const validateSignatureBundle = (rule, value, callback) => {
       if (!String(value || '').trim()) {
-        callback(new Error('请输入门限签名凭证'))
+        callback(new Error('请输入门限签名数据'))
         return
       }
       callback()
@@ -253,16 +242,11 @@ export default {
     createForm() {
       return {
         businessId: '',
-        message: '',
+        message: 'traffic speed range approved',
         totalNodes: 5,
         threshold: 3,
-        participantIdsText: '1,2,3',
-        signatureBundleText: JSON.stringify(DEFAULT_SIGNATURE_BUNDLE, null, 2),
-        writeLedger: true,
-        ledgerTargets: {
-          network: 'payment.bcos3',
-          resourcePath: BCOS3_VERIFY_PATH
-        }
+        participantIdsText: '1,2,4',
+        signatureBundleText: ''
       }
     },
     generateBusinessId() {
@@ -271,10 +255,10 @@ export default {
     },
     generateSignatureTestData() {
       if (!this.form.businessId) this.generateBusinessId()
-      this.form.message = `交通数据批次 ${this.form.businessId} 已通过多方确认`
+      this.form.message = 'traffic speed range approved'
       this.form.totalNodes = 5
       this.form.threshold = 3
-      this.form.participantIdsText = '1,2,3'
+      this.form.participantIdsText = '1,2,4'
       this.form.signatureBundleText = JSON.stringify(DEFAULT_SIGNATURE_BUNDLE, null, 2)
       this.clearInputError()
       this.$nextTick(() => this.$refs.form.clearValidate())
@@ -323,22 +307,22 @@ export default {
     parseSignatureBundle(value) {
       const text = String(value || '').trim()
       if (!text) {
-        return { ok: false, message: '门限签名凭证不能为空。' }
+        return { ok: false, message: '门限签名数据不能为空。' }
       }
       try {
         const parsed = JSON.parse(text)
         if (parsed == null) {
-          return { ok: false, message: '门限签名凭证不能为空。' }
+          return { ok: false, message: '门限签名数据不能为空。' }
         }
         if (Array.isArray(parsed)) {
           return parsed.length
             ? { ok: true, value: { signatures: parsed }}
-            : { ok: false, message: '门限签名凭证不能为空。' }
+            : { ok: false, message: '门限签名数据不能为空。' }
         }
         if (typeof parsed === 'object') {
           return Object.keys(parsed).length
             ? { ok: true, value: parsed }
-            : { ok: false, message: '门限签名凭证不能为空。' }
+            : { ok: false, message: '门限签名数据不能为空。' }
         }
         return { ok: true, value: { signature: String(parsed) }}
       } catch (error) {
@@ -361,14 +345,12 @@ export default {
           const response = await verifyThresholdSignature(payload)
           let nextResult = this.normalizeResult(response, payload)
           this.result = nextResult
-          saveRecentRecord(buildLocalRecord(nextResult))
-          if (nextResult.status === 'PASS' && this.form.writeLedger) {
+          if (nextResult.status === 'PASS') {
             nextResult = await syncCrossChainVerification(nextResult, VERIFY_TYPES.THRESHOLD_SIGNATURE, current => {
               this.result = current
             })
             this.result = nextResult
             await this.persistLedgerState(nextResult)
-            saveRecentRecord(buildLocalRecord(nextResult))
           }
           this.showSubmitMessage(this.result)
         } catch (error) {
@@ -400,16 +382,6 @@ export default {
         return null
       }
 
-      const ledgerTargets = this.buildLedgerTargets()
-      if (this.form.writeLedger && !ledgerTargets.length) {
-        this.inputError = '同步到可信账本时，请选择目标验证合约。'
-        return null
-      }
-      if (this.form.writeLedger && ledgerTargets[0] !== BCOS3_VERIFY_PATH) {
-        this.inputError = '当前跨链流程要求先写入 payment.bcos3.TrafficVerifyStore。'
-        return null
-      }
-
       this.inputError = ''
       return {
         businessId: this.form.businessId,
@@ -421,10 +393,6 @@ export default {
         writeLedger: false,
         ledgerTargets: []
       }
-    },
-    buildLedgerTargets() {
-      const target = this.form.ledgerTargets && this.form.ledgerTargets.resourcePath
-      return target ? [target] : []
     },
     async persistLedgerState(result) {
       if (!result || !result.recordId || !result.ledger) return
@@ -460,7 +428,7 @@ export default {
       const ledger = response.ledger || {}
       if (response.ledgerStatus) return response.ledgerStatus
       if (ledger.status) return ledger.status
-      return this.form.writeLedger ? 'PENDING' : 'DISABLED'
+      return 'PENDING'
     },
     showSubmitMessage(result) {
       if (result.status === 'ERROR') {
@@ -473,11 +441,11 @@ export default {
       }
       const ledger = result.ledger || {}
       const chain = result.chainVerification || {}
-      if (this.form.writeLedger && ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
+      if (ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
         this.$message.success('多方签名验证完成，可信账本同步和 Fabric 跨链验证成功')
         return
       }
-      if (this.form.writeLedger && (ledger.status === 'FAILED' || chain.status === 'FAILED')) {
+      if (ledger.status === 'FAILED' || chain.status === 'FAILED') {
         this.$message.warning(chain.message || ledger.message || '多方签名验证通过，但跨链同步未完成')
         return
       }
@@ -513,9 +481,6 @@ export default {
       this.$nextTick(() => {
         this.$refs.form.clearValidate()
       })
-    },
-    goRecords() {
-      this.$router.push({ path: '/cross-verification/records' })
     },
     openJsonDialog(data) {
       this.jsonDialogData = data
@@ -588,21 +553,23 @@ export default {
   max-height: 220px;
   font: 12px/1.6 Consolas, monospace;
 }
-.example-button {
-  margin-top: 10px;
-}
 .form-alert {
-  margin: 0 0 16px 140px;
+  margin: 0 0 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .form-actions {
   display: flex;
   flex-wrap: nowrap;
-  gap: 10px;
-  margin-left: 140px;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  margin-left: 0;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 .result-panel {
-  min-height: 360px;
+  min-height: 520px;
   padding-left: 18px;
   border-left: 1px solid #ebeef5;
 }
@@ -627,6 +594,7 @@ export default {
   .form-alert,
   .form-actions {
     margin-left: 0;
+    width: 100%;
   }
   .form-actions {
     overflow-x: auto;

@@ -33,7 +33,40 @@
   }
 
   .cross-verification-form::v-deep .el-form-item__label {
+    float: none;
+    display: block;
+    width: 100%;
+    padding: 0 0 8px;
+    line-height: 20px;
     color: #606266;
+    text-align: left;
+  }
+
+  .cross-verification-form::v-deep .el-input-group__append {
+    width: 1px;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  .cross-verification-form::v-deep .el-input-group__append .el-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 104px;
+    height: 36px;
+    padding: 0 18px;
+    text-indent: 3px;
+    letter-spacing: 3px;
+    line-height: 1;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  .cross-verification-form::v-deep .el-input__inner::placeholder,
+  .cross-verification-form::v-deep textarea::placeholder {
+    color: #c0c4cc;
+    font-size: 13px;
+    font-family: inherit;
   }
 
   .cross-verification-result {
@@ -80,11 +113,63 @@
   .dialog-footer {
     display: flex;
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: 14px;
     white-space: nowrap;
   }
 
+  .form-actions {
+    position: relative;
+    z-index: 1;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding-bottom: 24px;
+    margin-left: 0;
+    box-sizing: border-box;
+  }
+
+  .form-alert {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field-extra-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    width: 100%;
+    margin-top: 10px;
+    box-sizing: border-box;
+  }
+
+  .test-data-button {
+    min-width: 132px;
+  }
+
+  .verification-workspace {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .verification-workspace > .el-col {
+    display: flex;
+  }
+
+  .form-panel,
+  .result-panel {
+    width: 100%;
+    min-height: 520px;
+  }
+
   @media (max-width: 1199px) {
+    .verification-workspace {
+      display: block;
+    }
+
+    .verification-workspace > .el-col {
+      display: block;
+    }
+
     .cross-verification-result {
       margin-top: 24px;
       padding-left: 2px;

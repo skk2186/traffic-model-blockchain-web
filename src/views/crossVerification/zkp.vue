@@ -4,13 +4,13 @@
       <header class="page-header cross-verification-header">
         <div>
           <h2>隐私证明验证</h2>
-          <p>验证交通数据相关证明是否满足指定约束，同时避免直接展示原始数据内容。</p>
+          <p>验证交通数据相关证明是否满足指定约束</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
       </header>
 
-      <el-row :gutter="18">
-        <el-col :xs="24" :lg="10">
+      <el-row class="verification-workspace" :gutter="18">
+        <el-col :xs="24" :lg="9">
           <section class="form-panel">
             <div class="section-title">
               <h3>验证参数</h3>
@@ -19,7 +19,7 @@
               ref="form"
               :model="form"
               :rules="rules"
-              label-width="140px"
+              label-position="top"
               class="zkp-form cross-verification-form"
             >
               <el-form-item label="业务标识" prop="businessId">
@@ -31,16 +31,12 @@
                 </el-input>
               </el-form-item>
 
-              <el-form-item label="证明算法">
-                <el-input v-model="form.algorithm" readonly />
-              </el-form-item>
-
               <el-form-item label="零知识证明规则" prop="circuitId">
                 <el-input
                   v-model.trim="form.circuitId"
                   placeholder="选择或生成证明规则，例如：证明车速处于规定范围"
                 >
-                  <el-button slot="append" @click="generateZkpTestData">生成测试数据</el-button>
+                  <el-button slot="append" class="generate-rule-button" @click="generateZkpRule">生成</el-button>
                 </el-input>
               </el-form-item>
 
@@ -104,28 +100,70 @@
                 </dl>
               </template>
 
-              <el-form-item label="公开验证条件" prop="publicSignalsText">
+              <el-form-item label="公开验证条件">
+                <el-radio-group v-model="form.publicInputMode" size="small" @change="handlePublicModeChange">
+                  <el-radio-button label="paste">粘贴 JSON</el-radio-button>
+                  <el-radio-button label="upload">上传证明文件</el-radio-button>
+                  <el-radio-button label="example">使用示例证明</el-radio-button>
+                </el-radio-group>
+              </el-form-item>
+
+              <el-form-item
+                v-if="form.publicInputMode === 'paste' || form.publicInputMode === 'example'"
+                label="公开条件值"
+                prop="publicSignalsText"
+              >
                 <el-input
                   v-model="form.publicSignalsText"
                   class="json-textarea public-signals"
                   type="textarea"
                   :rows="5"
-                  placeholder="请输入验证者可以知道的条件，例如速度上限、数据摘要"
+                  placeholder="请输入公开验证条件 JSON"
                   @input="clearInputError"
                 />
+                <el-button
+                  v-if="form.publicInputMode === 'example'"
+                  class="example-button"
+                  size="small"
+                  type="primary"
+                  plain
+                  icon="el-icon-document-add"
+                  @click="fillExamplePublicSignals"
+                >填入示例证明</el-button>
               </el-form-item>
+
+              <template v-if="form.publicInputMode === 'upload'">
+                <el-form-item label="公开条件文件">
+                  <el-upload
+                    ref="publicUpload"
+                    action="#"
+                    :auto-upload="false"
+                    :limit="1"
+                    :file-list="publicFileList"
+                    :on-change="handlePublicFileChange"
+                    :on-remove="handlePublicFileRemove"
+                    :on-exceed="handlePublicFileExceed"
+                    accept=".json,.txt"
+                  >
+                    <el-button icon="el-icon-folder-opened">选择证明文件</el-button>
+                  </el-upload>
+                </el-form-item>
+                <dl v-if="publicFileMeta" class="file-meta">
+                  <div>
+                    <dt>文件名</dt>
+                    <dd>{{ publicFileMeta.fileName }}</dd>
+                  </div>
+                  <div>
+                    <dt>文件大小</dt>
+                    <dd>{{ publicFileMeta.sizeText }}</dd>
+                  </div>
+                </dl>
+              </template>
 
               <el-form-item label="公开条件 Hash" prop="publicInputHash">
                 <el-input
                   v-model.trim="form.publicInputHash"
                   placeholder="可选，64 位十六进制字符串"
-                />
-              </el-form-item>
-
-              <el-form-item label="可信账本同步">
-                <LedgerTargetSelector
-                  :write-ledger.sync="form.writeLedger"
-                  :ledger-targets.sync="form.ledgerTargets"
                 />
               </el-form-item>
 
@@ -146,32 +184,28 @@
                   @click="submit"
                 >执行验证</el-button>
                 <el-button icon="el-icon-refresh-left" @click="resetForm">重置表单</el-button>
-                <el-button icon="el-icon-tickets" @click="goRecords">查看验证记录</el-button>
               </div>
             </el-form>
           </section>
         </el-col>
 
-        <el-col :xs="24" :lg="14">
+        <el-col :xs="24" :lg="15">
           <section class="result-panel cross-verification-result">
             <VerificationResultPanel
-              v-if="result"
               :result="result"
               :loading="submitting"
               title="验证结果"
+              verify-type="zkp"
               @show-json="openJsonDialog"
             />
-            <div v-else class="result-empty">
-              <el-empty description="请填写验证参数并执行隐私证明验证。" :image-size="88" />
-              <el-alert
-                v-if="submitError"
-                class="result-error"
-                :title="submitError"
-                type="error"
-                :closable="false"
-                show-icon
-              />
-            </div>
+            <el-alert
+              v-if="submitError"
+              class="result-error"
+              :title="submitError"
+              type="error"
+              :closable="false"
+              show-icon
+            />
           </section>
         </el-col>
       </el-row>
@@ -188,32 +222,50 @@
 <script>
 import { getCrossVerificationHealth, updateVerificationRecordLedger, verifyZkp } from '@/api/crossVerification'
 import JsonResultDialog from './components/JsonResultDialog'
-import LedgerTargetSelector from './components/LedgerTargetSelector'
 import VerificationResultPanel from './components/VerificationResultPanel'
 import { formatBytes } from './utils/fileChunkUtils'
-import { BCOS3_VERIFY_PATH, VERIFY_TYPES } from '@/api/trafficVerifyChain'
+import { VERIFY_TYPES } from '@/api/trafficVerifyChain'
 import { syncCrossChainVerification } from './utils/crossChainVerification'
-import { buildLocalRecord, isHex64, saveRecentRecord } from './utils/verificationUtils'
+import { isHex64 } from './utils/verificationUtils'
 
 const EXAMPLE_PROOF = {
-  piA: ['1234567890', '2345678901'],
-  piB: [
-    ['3456789012', '4567890123'],
-    ['5678901234', '6789012345']
-  ],
-  piC: ['7890123456', '8901234567'],
-  protocol: 'groth16',
+  scheme: 'g16',
   curve: 'bn128',
-  valid: true
+  proof: {
+    a: [
+      '0x20a48547246896b28890481bf6319ccf6cf875c2289e0be5e6108818bb98d09e',
+      '0x26de35885848d4cd148fdfee5761abb74aa7a8350312d0135d2ad6969060971d'
+    ],
+    b: [
+      [
+        '0x2126192f6ba897fbc65ad0c3d8cc47f49f9b7255900bf9c9c612c2d81e977dc0',
+        '0x2503c8ff8d62a5af0f5ab3c0a3d6ed37f6d14b1d89a6342d80b2e9bfdac69726'
+      ],
+      [
+        '0x23ccb69382a40f1be41080062d33cce8b1f7c602575d619299bf280ddb2c45b7',
+        '0x00fc07184c8db2baa3af418d4881366d09b622b3f23fd9efff2e1d6705bccd4b'
+      ]
+    ],
+    c: [
+      '0x17f96e36f1fd23e65b714fdaf3e472e663224422c36b3f8f3c88793685c95841',
+      '0x1b83c72ddc0ffeeb104dcf49c9f98b2c0e82ff0e5e900475d9542f9cc35adce2'
+    ]
+  },
+  inputs: [
+    '0x000000000000000000000000000000000000000000000000000000000000001e',
+    '0x0000000000000000000000000000000000000000000000000000000000000050'
+  ]
 }
 
-const EXAMPLE_PUBLIC_SIGNALS = ['42', '60', '1']
+const EXAMPLE_PUBLIC_SIGNALS = [
+  '0x000000000000000000000000000000000000000000000000000000000000001e',
+  '0x0000000000000000000000000000000000000000000000000000000000000050'
+]
 
 export default {
   name: 'ZkpVerification',
   components: {
     JsonResultDialog,
-    LedgerTargetSelector,
     VerificationResultPanel
   },
   data() {
@@ -266,6 +318,8 @@ export default {
       },
       proofFileList: [],
       proofFileMeta: null,
+      publicFileList: [],
+      publicFileMeta: null,
       inputError: '',
       submitError: '',
       result: null,
@@ -294,25 +348,19 @@ export default {
         circuitId: '',
         proofInputMode: 'paste',
         proofText: '',
+        publicInputMode: 'paste',
         publicSignalsText: '',
-        publicInputHash: '',
-        writeLedger: true,
-        ledgerTargets: {
-          network: 'payment.bcos3',
-          resourcePath: BCOS3_VERIFY_PATH
-        }
+        publicInputHash: ''
       }
     },
     generateBusinessId() {
       this.form.businessId = `traffic-proof-${Date.now()}`
       this.$nextTick(() => this.$refs.form.validateField('businessId'))
     },
-    generateZkpTestData() {
-      if (!this.form.businessId) this.generateBusinessId()
+    generateZkpRule() {
       this.form.circuitId = 'traffic-speed-range-v1'
-      this.form.proofInputMode = 'example'
-      this.fillExampleProof()
-      this.$message.success('ZKP 测试数据已生成')
+      this.clearInputError()
+      this.$nextTick(() => this.$refs.form.validateField('circuitId'))
     },
     async checkHealth() {
       this.healthStatus = 'unchecked'
@@ -331,15 +379,22 @@ export default {
     },
     fillExampleProof() {
       this.form.proofText = JSON.stringify(EXAMPLE_PROOF, null, 2)
-      this.form.publicSignalsText = JSON.stringify(EXAMPLE_PUBLIC_SIGNALS, null, 2)
-      if (!this.form.circuitId) {
-        this.form.circuitId = 'traffic-speed-range-v1'
-      }
       this.clearInputError()
       this.$nextTick(() => {
         this.$refs.form.validateField('proofText')
+      })
+    },
+    handlePublicModeChange(mode) {
+      this.clearInputError()
+      if (mode === 'example') {
+        this.fillExamplePublicSignals()
+      }
+    },
+    fillExamplePublicSignals() {
+      this.form.publicSignalsText = JSON.stringify(EXAMPLE_PUBLIC_SIGNALS, null, 2)
+      this.clearInputError()
+      this.$nextTick(() => {
         this.$refs.form.validateField('publicSignalsText')
-        this.$refs.form.validateField('circuitId')
       })
     },
     async handleProofFileChange(file, fileList) {
@@ -372,6 +427,37 @@ export default {
     },
     handleProofFileExceed() {
       this.$message.warning('一次只能选择一个证明文件，请先移除当前文件')
+    },
+    async handlePublicFileChange(file, fileList) {
+      if (!file.raw) return
+      this.inputError = ''
+      this.publicFileList = fileList.slice(-1)
+      try {
+        const text = await this.readFileText(file.raw)
+        const parsed = this.parseJson(text, '公开验证条件格式错误，请检查 JSON 内容。')
+        if (!parsed.ok) {
+          throw new Error(parsed.message)
+        }
+        this.form.publicSignalsText = JSON.stringify(parsed.value, null, 2)
+        this.publicFileMeta = {
+          fileName: file.raw.name,
+          sizeText: formatBytes(file.raw.size)
+        }
+        this.$nextTick(() => {
+          this.$refs.form.validateField('publicSignalsText')
+        })
+      } catch (error) {
+        this.publicFileList = []
+        this.publicFileMeta = null
+        this.inputError = error.message || '公开验证条件文件读取失败'
+      }
+    },
+    handlePublicFileRemove() {
+      this.publicFileList = []
+      this.publicFileMeta = null
+    },
+    handlePublicFileExceed() {
+      this.$message.warning('一次只能选择一个公开验证条件文件，请先移除当前文件')
     },
     readFileText(file) {
       return new Promise((resolve, reject) => {
@@ -414,14 +500,12 @@ export default {
           const response = await verifyZkp(payload)
           let nextResult = this.normalizeResult(response, payload)
           this.result = nextResult
-          saveRecentRecord(buildLocalRecord(nextResult))
-          if (nextResult.status === 'PASS' && this.form.writeLedger) {
+          if (nextResult.status === 'PASS') {
             nextResult = await syncCrossChainVerification(nextResult, VERIFY_TYPES.ZKP, current => {
               this.result = current
             })
             this.result = nextResult
             await this.persistLedgerState(nextResult)
-            saveRecentRecord(buildLocalRecord(nextResult))
           }
           this.showSubmitMessage(this.result)
         } catch (error) {
@@ -453,16 +537,6 @@ export default {
         return null
       }
 
-      const ledgerTargets = this.buildLedgerTargets()
-      if (this.form.writeLedger && !ledgerTargets.length) {
-        this.inputError = '同步到可信账本时，请选择目标验证合约。'
-        return null
-      }
-      if (this.form.writeLedger && ledgerTargets[0] !== BCOS3_VERIFY_PATH) {
-        this.inputError = '当前跨链流程要求先写入 payment.bcos3.TrafficVerifyStore。'
-        return null
-      }
-
       this.inputError = ''
       return {
         businessId: this.form.businessId,
@@ -473,10 +547,6 @@ export default {
         writeLedger: false,
         ledgerTargets: []
       }
-    },
-    buildLedgerTargets() {
-      const target = this.form.ledgerTargets && this.form.ledgerTargets.resourcePath
-      return target ? [target] : []
     },
     async persistLedgerState(result) {
       if (!result || !result.recordId || !result.ledger) return
@@ -512,7 +582,7 @@ export default {
       const ledger = response.ledger || {}
       if (response.ledgerStatus) return response.ledgerStatus
       if (ledger.status) return ledger.status
-      return this.form.writeLedger ? 'PENDING' : 'DISABLED'
+      return 'PENDING'
     },
     showSubmitMessage(result) {
       if (result.status === 'ERROR') {
@@ -525,11 +595,11 @@ export default {
       }
       const ledger = result.ledger || {}
       const chain = result.chainVerification || {}
-      if (this.form.writeLedger && ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
+      if (ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
         this.$message.success('隐私证明验证完成，可信账本同步和 Fabric 跨链验证成功')
         return
       }
-      if (this.form.writeLedger && (ledger.status === 'FAILED' || chain.status === 'FAILED')) {
+      if (ledger.status === 'FAILED' || chain.status === 'FAILED') {
         this.$message.warning(chain.message || ledger.message || '隐私证明验证通过，但跨链同步未完成')
         return
       }
@@ -558,15 +628,14 @@ export default {
       this.form = this.createForm()
       this.proofFileList = []
       this.proofFileMeta = null
+      this.publicFileList = []
+      this.publicFileMeta = null
       this.inputError = ''
       this.submitError = ''
       this.result = null
       this.$nextTick(() => {
         this.$refs.form.clearValidate()
       })
-    },
-    goRecords() {
-      this.$router.push({ path: '/cross-verification/records' })
     },
     openJsonDialog(data) {
       this.jsonDialogData = data
@@ -635,10 +704,14 @@ export default {
 .example-button {
   margin-top: 8px;
 }
+.generate-rule-button {
+  min-width: 108px;
+}
 .file-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0 0 18px 140px;
+  margin: 0 0 18px;
+  font-size: 13px;
   border-top: 1px solid #ebeef5;
   border-left: 1px solid #ebeef5;
 }
@@ -654,6 +727,8 @@ export default {
   min-width: 0;
   margin: 0;
   padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
   line-height: 20px;
 }
 .file-meta dt {
@@ -667,18 +742,22 @@ export default {
   white-space: nowrap;
 }
 .form-alert {
-  margin: 0 0 16px 140px;
+  margin: 0 0 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .form-actions {
   display: flex;
   flex-wrap: nowrap;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-left: 140px;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  margin-left: 0;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 .result-panel {
-  min-height: 360px;
+  min-height: 520px;
   padding-left: 18px;
   border-left: 1px solid #ebeef5;
 }
@@ -704,6 +783,7 @@ export default {
   .form-alert,
   .form-actions {
     margin-left: 0;
+    width: 100%;
   }
   .file-meta {
     grid-template-columns: 1fr;

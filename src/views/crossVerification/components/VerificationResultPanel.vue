@@ -1,53 +1,77 @@
 <template>
-  <section v-loading="loading" class="verification-result-panel cross-verification-result">
-    <div class="panel-header">
+  <section
+    v-loading="loading"
+    class="verification-result-panel"
+    element-loading-text="正在执行验证并同步链上结果，请稍候..."
+    element-loading-background="rgba(255, 255, 255, 0.86)"
+  >
+    <div class="section-title result-title">
       <h3>{{ title }}</h3>
-      <div class="panel-actions">
-        <el-button
+      <el-tag v-if="result" :type="verifyStatus.type">{{ verifyStatus.text }}</el-tag>
+    </div>
+
+    <el-alert
+      v-if="loading"
+      class="result-loading-hint"
+      title="正在执行验证并同步可信账本，请稍候..."
+      type="info"
+      :closable="false"
+      show-icon
+    />
+
+    <dl class="result-meta">
+      <div v-for="item in metaRows" :key="item.label" :class="{ wide: item.wide }">
+        <dt>{{ item.label }}</dt>
+        <dd>
+          <el-tag v-if="item.tag" class="status-tag" :type="item.tag.type" size="mini">{{ item.tag.text }}</el-tag>
+          <code v-else-if="item.code" class="inline-code">{{ item.value || '-' }}</code>
+          <span v-else>{{ item.value || '-' }}</span>
+        </dd>
+      </div>
+    </dl>
+
+    <div class="status-summary">
+      <div v-for="item in statusRows" :key="item.label" class="status-item">
+        <span>{{ item.label }}</span>
+        <el-tag
+          v-if="item.tag"
+          class="status-tag"
+          :type="item.tag.type"
           size="mini"
-          icon="el-icon-document-copy"
-          :disabled="!recordId"
-          @click="copyRecordId"
-        >复制记录 ID</el-button>
-        <el-button
-          size="mini"
-          type="primary"
-          plain
-          icon="el-icon-view"
-          :disabled="!result"
-          @click="$emit('show-json', result)"
-        >查看完整结果</el-button>
+        >{{ item.tag.text }}</el-tag>
+        <em v-else>-</em>
       </div>
     </div>
 
-    <el-empty v-if="!result" description="暂无验证结果" :image-size="88" />
-    <template v-else>
-      <dl class="result-grid">
-        <div v-for="item in resultRows" :key="item.label" :class="{ wide: item.wide }">
-          <dt>{{ item.label }}</dt>
-          <dd>
-            <el-tag v-if="item.tag" class="status-tag" :type="item.tag.type" size="mini">{{ item.tag.text }}</el-tag>
-            <el-tooltip
-              v-else-if="item.tooltip"
-              :content="item.value || '-'"
-              placement="top"
-              effect="light"
-            >
-              <code class="value-code hash-cell is-truncated">{{ item.value || '-' }}</code>
-            </el-tooltip>
-            <span v-else>{{ item.value || '-' }}</span>
-          </dd>
-        </div>
-      </dl>
-      <el-alert
-        v-if="result.message"
-        class="result-message"
-        :title="result.message"
-        type="info"
-        :closable="false"
-        show-icon
-      />
-    </template>
+    <div class="values">
+      <div v-for="item in valueRows" :key="item.label" class="value-row">
+        <span>{{ item.label }}</span>
+        <code>{{ item.value || '-' }}</code>
+        <el-button
+          type="text"
+          icon="el-icon-document-copy"
+          title="复制"
+          :disabled="!item.value"
+          @click="copyValue(item.value)"
+        />
+      </div>
+    </div>
+
+    <el-collapse v-if="result" class="detail-collapse">
+      <el-collapse-item>
+        <template slot="title">
+          <div class="detail-collapse-title">
+            <span>查看完整验证详情</span>
+            <el-button
+              type="text"
+              icon="el-icon-document-copy"
+              @click.stop="copyValue(prettyResult, '完整验证详情已复制')"
+            >复制</el-button>
+          </div>
+        </template>
+        <pre>{{ prettyResult }}</pre>
+      </el-collapse-item>
+    </el-collapse>
   </section>
 </template>
 
@@ -68,6 +92,10 @@ export default {
     title: {
       type: String,
       default: '验证结果'
+    },
+    verifyType: {
+      type: String,
+      default: ''
     }
   },
   computed: {
@@ -78,27 +106,89 @@ export default {
       return formatVerifyStatus(this.result && this.result.status)
     },
     ledgerStatus() {
-      return formatLedgerStatus(this.getLedgerStatus())
+      const status = this.getLedgerStatus()
+      const current = formatLedgerStatus(status)
+      if (this.isSuccessStatus(status)) {
+        return Object.assign({}, current, { text: '已同步' })
+      }
+      return current
     },
-    resultRows() {
+    metaRows() {
+      const current = this.result || {}
       return [
-        { label: '记录 ID', value: this.recordId, tooltip: true, wide: true },
-        { label: '验证方式', value: this.getVerifyName() },
-        { label: '业务标识', value: this.result.businessId, tooltip: true },
-        { label: '算法', value: this.result.algorithm },
-        { label: '验证状态', tag: this.verifyStatus },
-        ...this.extraRows,
-        { label: '结果 Hash', value: this.getResultHash(), tooltip: true, wide: true },
-        { label: '可信账本同步状态', tag: this.ledgerStatus },
-        { label: '交易哈希', value: this.getTxHash(), tooltip: true, wide: true },
-        { label: 'Fabric 跨链验证状态', tag: this.getChainVerificationStatus() },
-        { label: 'Fabric 跨链交易哈希', value: this.getChainVerificationTxHash(), tooltip: true, wide: true }
+        { label: '验证类型', value: this.getVerifyName() },
+        { label: '算法', value: current.algorithm },
+        { label: '业务标识', value: current.businessId },
+        { label: '生成时间', value: this.formatTime(current.timestamp) },
+        { label: '记录 ID', value: this.recordId, code: true, wide: true }
       ]
+    },
+    statusRows() {
+      return [
+        { label: '验证状态', tag: this.result ? this.verifyStatus : null },
+        { label: '账本同步', tag: this.result ? this.ledgerStatus : null },
+        { label: 'Fabric 验证', tag: this.result ? this.getChainVerificationStatus() : null }
+      ]
+    },
+    valueRows() {
+      if (!this.result) {
+        return this.defaultValueRows()
+      }
+      const rows = [
+        ...this.extraRows(),
+        { label: '结果 Hash', value: this.getResultHash() },
+        { label: '交易哈希', value: this.getTxHash() },
+        { label: 'Fabric 跨链交易哈希', value: this.getChainVerificationTxHash() }
+      ]
+      return rows
+    },
+    prettyResult() {
+      return this.result ? JSON.stringify(this.result, null, 2) : ''
     }
   },
   methods: {
     getVerifyName() {
-      return this.result.verifyName || this.result.verifyType || ''
+      if (this.result) {
+        return this.result.verifyName || this.result.verifyType || ''
+      }
+      const nameMap = {
+        merkle: '数据完整性验证',
+        zkp: '隐私证明验证',
+        threshold: '多方签名验证'
+      }
+      return nameMap[this.verifyType] || ''
+    },
+    defaultValueRows() {
+      const commonRows = [
+        { label: '结果 Hash', value: '' },
+        { label: '交易哈希', value: '' },
+        { label: 'Fabric 跨链交易哈希', value: '' }
+      ]
+      if (this.verifyType === 'zkp') {
+        return [
+          { label: '零知识证明规则', value: '' },
+          { label: '证明 Hash', value: '' },
+          { label: '公开条件 Hash', value: '' },
+          ...commonRows
+        ]
+      }
+      if (this.verifyType === 'threshold') {
+        return [
+          { label: '总节点数', value: '' },
+          { label: '签名阈值', value: '' },
+          { label: '参与节点数量', value: '' },
+          { label: '消息 Hash', value: '' },
+          { label: '签名 Hash', value: '' },
+          ...commonRows
+        ]
+      }
+      return [
+        { label: 'Merkle Root', value: '' },
+        { label: '叶子总数', value: '' },
+        { label: '抽样索引', value: '' },
+        { label: '证明 Hash', value: '' },
+        ...commonRows
+      ]
     },
     getResultHash() {
       const detail = this.result.detail || {}
@@ -212,17 +302,37 @@ export default {
     },
     getChainVerificationStatus() {
       const chain = this.result && this.result.chainVerification
-      return formatLedgerStatus(chain && chain.status ? chain.status : 'DISABLED')
+      const status = chain && chain.status ? chain.status : 'DISABLED'
+      const current = formatLedgerStatus(status)
+      if (this.isSuccessStatus(status)) {
+        return Object.assign({}, current, { text: '已验证' })
+      }
+      if (status === 'FAILED' || status === 'LEDGER_FAILED' || status === 'ERROR') {
+        return Object.assign({}, current, { text: '验证失败' })
+      }
+      if (status === 'PENDING') {
+        return Object.assign({}, current, { text: '验证待确认' })
+      }
+      if (status === 'DISABLED') {
+        return Object.assign({}, current, { text: '未验证' })
+      }
+      return current
     },
     getChainVerificationTxHash() {
       const chain = this.result && this.result.chainVerification
       return chain && (chain.txHash || chain.transactionHash) || ''
     },
-    copyRecordId() {
-      if (!this.recordId) return
-      copyText(this.recordId)
-        .then(() => this.$message.success('记录 ID 已复制'))
-        .catch(() => this.$message.warning('请手动选择记录 ID 复制'))
+    copyValue(value, successMessage = '已复制') {
+      if (!value) return
+      copyText(value)
+        .then(() => this.$message.success(successMessage))
+        .catch(() => this.$message.warning('请手动选择内容复制'))
+    },
+    isSuccessStatus(status) {
+      return ['SUCCESS', 'LEDGER_SUCCESS', 'PASS'].includes(status)
+    },
+    formatTime(value) {
+      return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
     }
   }
 }
@@ -232,86 +342,205 @@ export default {
 @import '../styles/common.scss';
 
 .verification-result-panel {
+  position: relative;
   min-height: 260px;
-  padding: 4px 2px;
+  padding: 0 0 18px;
+  color: #303133;
+  font-size: 13px;
+  line-height: 20px;
+  overflow: visible;
 }
-.panel-header {
+.result-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
-.panel-header h3 {
+.result-title h3 {
   margin: 0;
   color: #303133;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0;
 }
-.panel-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 8px;
-  white-space: nowrap;
-}
-.result-grid {
+.result-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
-  border-top: 1px solid #ebeef5;
-  border-left: 1px solid #ebeef5;
+  border: 1px solid #ebeef5;
+  border-bottom: 0;
 }
-.result-grid div {
+.result-meta div {
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
+  grid-template-columns: 82px minmax(0, 1fr);
   min-width: 0;
-  min-height: 40px;
-  border-right: 1px solid #ebeef5;
+  min-height: 38px;
   border-bottom: 1px solid #ebeef5;
 }
-.result-grid .wide {
+.result-meta div:nth-child(odd):not(.wide) {
+  border-right: 1px solid #ebeef5;
+}
+.result-meta .wide {
   grid-column: 1 / -1;
 }
-.result-grid dt,
-.result-grid dd {
+.result-meta dt,
+.result-meta dd {
+  display: flex;
+  align-items: center;
   min-width: 0;
   margin: 0;
-  padding: 10px 12px;
+  padding: 8px 10px;
   line-height: 20px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
-.result-grid dt {
+.result-meta dt {
   color: #909399;
   background: #f5f7fa;
 }
-.result-grid dd {
+.result-meta dd {
   color: #303133;
+  overflow: hidden;
 }
-.value-code {
-  display: inline-block;
+.status-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 16px;
+}
+.status-item {
+  display: grid;
+  grid-template-columns: minmax(58px, max-content) minmax(76px, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  border: 1px solid #dce8f5;
+  border-left: 3px solid #7aa7d9;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(31, 93, 143, 0.06);
+}
+.status-item span {
+  min-width: 0;
+  overflow: hidden;
+  color: #4f5f70;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.status-item .status-tag {
+  justify-self: end;
   max-width: 100%;
-  color: #1f5d8f;
-  font: 12px Consolas, monospace;
-  vertical-align: bottom;
-}
-.is-truncated {
+  min-width: 76px;
+  padding: 0 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.result-message {
-  margin-top: 14px;
+.status-item em {
+  justify-self: end;
+  color: #909399;
+  font-style: normal;
+  line-height: 20px;
+}
+.values {
+  margin: 16px 0;
+  border-top: 1px solid #ebeef5;
+}
+.value-row {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr) 34px;
+  align-items: center;
+  min-height: 46px;
+  border-bottom: 1px solid #ebeef5;
+}
+.value-row span {
+  color: #606266;
+  font-size: 13px;
+}
+.value-row code,
+.inline-code {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  color: #1f5d8f;
+  font: 12px Consolas, monospace;
+  line-height: 20px;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.value-row code {
+  padding-right: 10px;
+}
+.value-row code::-webkit-scrollbar,
+.inline-code::-webkit-scrollbar {
+  height: 4px;
+}
+.value-row code::-webkit-scrollbar-thumb,
+.inline-code::-webkit-scrollbar-thumb {
+  background: #c7d7e8;
+  border-radius: 999px;
+}
+.result-loading-hint {
+  margin-bottom: 14px;
+}
+.detail-collapse {
+  margin-top: 4px;
+}
+.detail-collapse-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-right: 10px;
+}
+.detail-collapse-title span {
+  color: #303133;
+  font-size: 13px;
+}
+.detail-collapse-title .el-button {
+  padding: 0;
+  font-size: 13px;
+}
+pre {
+  max-height: 310px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  color: #303133;
+  font: 12px/1.6 Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
 }
 @media (max-width: 900px) {
-  .panel-header {
+  .result-title {
     align-items: flex-start;
     flex-direction: column;
   }
-  .result-grid {
+  .result-meta {
     grid-template-columns: 1fr;
   }
-  .result-grid div {
+  .result-meta div {
     grid-template-columns: 116px minmax(0, 1fr);
+  }
+  .result-meta div:nth-child(odd):not(.wide) {
+    border-right: 0;
+  }
+  .value-row {
+    grid-template-columns: 116px minmax(0, 1fr) 34px;
+  }
+  .status-summary {
+    grid-template-columns: 1fr;
   }
 }
 </style>

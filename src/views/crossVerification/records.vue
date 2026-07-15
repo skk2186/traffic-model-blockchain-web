@@ -75,51 +75,72 @@
           empty-text="暂无验证记录。"
           class="records-table cross-verification-table"
         >
-          <el-table-column prop="recordId" label="记录 ID" min-width="180" show-overflow-tooltip />
-          <el-table-column label="验证方式" width="150">
-            <template slot-scope="{ row }">{{ formatVerifyType(row.verifyType, row.verifyName) }}</template>
-          </el-table-column>
-          <el-table-column prop="businessId" label="业务标识" min-width="160" show-overflow-tooltip />
-          <el-table-column prop="algorithm" label="算法" width="140" show-overflow-tooltip />
-          <el-table-column label="验证状态" width="120" align="center">
+          <el-table-column label="记录信息" min-width="210">
             <template slot-scope="{ row }">
-              <el-tag class="status-tag" :type="verifyStatusMeta(row.status).type" size="mini">
-                {{ verifyStatusMeta(row.status).text }}
-              </el-tag>
+              <div class="record-cell">
+                <el-tooltip :content="row.recordId || '-'" placement="top" effect="light">
+                  <code>{{ row.recordId || '-' }}</code>
+                </el-tooltip>
+                <span>{{ row.businessId || '-' }}</span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="可信账本状态" width="140" align="center">
+          <el-table-column label="验证信息" min-width="150">
             <template slot-scope="{ row }">
-              <el-tag class="status-tag" :type="ledgerStatusMeta(row.ledgerStatus).type" size="mini">
-                {{ ledgerStatusMeta(row.ledgerStatus).text }}
-              </el-tag>
+              <div class="record-cell">
+                <strong>{{ formatVerifyType(row.verifyType, row.verifyName) }}</strong>
+                <span>{{ row.algorithm || '-' }}</span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="协同网络" min-width="160" show-overflow-tooltip>
-            <template slot-scope="{ row }">{{ row.chainPath || getChainPath(row.resourcePath) || '-' }}</template>
-          </el-table-column>
-          <el-table-column label="交易哈希" min-width="180" show-overflow-tooltip>
-            <template slot-scope="{ row }">{{ row.txHash || '-' }}</template>
-          </el-table-column>
-          <el-table-column label="跨链状态" width="120" align="center">
+          <el-table-column label="状态" min-width="210">
             <template slot-scope="{ row }">
-              <el-tag class="status-tag" :type="crossChainStatusMeta(getCrossChainStatus(row)).type" size="mini">
-                {{ crossChainStatusMeta(getCrossChainStatus(row)).text }}
-              </el-tag>
+              <div class="status-stack">
+                <el-tag class="status-tag" :type="verifyStatusMeta(row.status).type" size="mini">
+                  {{ verifyStatusMeta(row.status).text }}
+                </el-tag>
+                <el-tag class="status-tag" :type="ledgerStatusMeta(row.ledgerStatus).type" size="mini">
+                  {{ ledgerStatusMeta(row.ledgerStatus).text }}
+                </el-tag>
+                <el-tag class="status-tag" :type="crossChainStatusMeta(getCrossChainStatus(row)).type" size="mini">
+                  {{ crossChainStatusMeta(getCrossChainStatus(row)).text }}
+                </el-tag>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="跨链交易哈希" min-width="180" show-overflow-tooltip>
-            <template slot-scope="{ row }">{{ getCrossChainTxHash(row) }}</template>
+          <el-table-column label="链上信息" min-width="220">
+            <template slot-scope="{ row }">
+              <div class="chain-cell">
+                <div>
+                  <span>网络</span>
+                  <em>{{ row.chainPath || getChainPath(row.resourcePath) || '-' }}</em>
+                </div>
+                <div>
+                  <span>账本</span>
+                  <el-tooltip :content="row.txHash || '-'" placement="top" effect="light">
+                    <code>{{ row.txHash || '-' }}</code>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <span>Fabric</span>
+                  <el-tooltip :content="getCrossChainTxHash(row)" placement="top" effect="light">
+                    <code>{{ getCrossChainTxHash(row) }}</code>
+                  </el-tooltip>
+                </div>
+              </div>
+            </template>
           </el-table-column>
-          <el-table-column label="创建时间" width="170">
+          <el-table-column label="创建时间" width="160">
             <template slot-scope="{ row }">
               <span class="nowrap">{{ formatTime(row.createdAt || row.timestamp) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="150" fixed="right" align="center">
+          <el-table-column label="操作" width="140" align="center">
             <template slot-scope="{ row }">
-              <el-button type="text" size="mini" @click="openDetail(row)">查看详情</el-button>
-              <el-button type="text" size="mini" @click="copyRecordId(row.recordId)">复制 ID</el-button>
+              <div class="row-actions">
+                <el-button type="text" size="mini" @click="openDetail(row)">查看详情</el-button>
+                <el-button type="text" size="mini" @click="copyRecordId(row.recordId)">复制 ID</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -130,7 +151,7 @@
             :current-page="pagination.page"
             :page-size="pagination.size"
             :page-sizes="[10, 20, 50, 100]"
-            :total="Math.max(pagination.total, records.length)"
+            :total="pagination.total"
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="handleSizeChange"
             @current-change="handlePageChange"
@@ -192,7 +213,7 @@
 
 <script>
 import { getVerificationRecord, listVerificationRecords } from '@/api/crossVerification'
-import { copyText, loadRecentRecords } from './utils/verificationUtils'
+import { copyText } from './utils/verificationUtils'
 
 export default {
   name: 'VerificationRecords',
@@ -288,44 +309,49 @@ export default {
         }
       }
       const source = response || {}
-      const serverRecords = this.pickRecords(source)
-      const localRecords = loadRecentRecords().filter(record => this.matchesFilters(record))
-      const records = this.mergeRecords(serverRecords, localRecords)
+      const records = this.pickRecords(source)
+      const metaSource = source.data && !Array.isArray(source.data) ? source.data : {}
+      const springPage = this.pickNumber([source.number, metaSource.number], null)
+      const page = this.pickNumber([
+        source.page,
+        source.current,
+        source.pageNum,
+        metaSource.page,
+        metaSource.current,
+        metaSource.pageNum
+      ], springPage == null ? this.pagination.page : springPage + 1)
+      const size = this.pickNumber([
+        source.size,
+        source.pageSize,
+        source.limit,
+        metaSource.size,
+        metaSource.pageSize,
+        metaSource.limit
+      ], this.pagination.size)
+      const total = this.pickNumber([
+        source.total,
+        source.totalElements,
+        source.totalCount,
+        source.count,
+        metaSource.total,
+        metaSource.totalElements,
+        metaSource.totalCount,
+        metaSource.count
+      ], records.length)
       return {
         records,
-        page: Number(source.page || source.current || this.pagination.page),
-        size: Number(source.size || source.pageSize || this.pagination.size),
-        total: Math.max(Number(source.total != null ? source.total : 0), records.length)
+        page,
+        size,
+        total
       }
     },
-    matchesFilters(record) {
-      if (this.filters.verifyType && record.verifyType !== this.filters.verifyType) return false
-      if (this.filters.status && record.status !== this.filters.status) return false
-      if (this.filters.businessId && !String(record.businessId || '').includes(this.filters.businessId)) return false
-      return true
-    },
-    mergeRecords(serverRecords, localRecords) {
-      const localById = new Map(localRecords.map(item => [item.recordId, item]))
-      const records = serverRecords.map(serverRecord => {
-        const localRecord = localById.get(serverRecord.recordId)
-        if (!localRecord) return serverRecord
-        localById.delete(serverRecord.recordId)
-        const ledger = Object.assign({}, localRecord.ledger || {}, serverRecord.ledger || {})
-        const chainVerification = serverRecord.chainVerification || localRecord.chainVerification || null
-        return Object.assign({}, localRecord, serverRecord, {
-          ledger,
-          ledgerStatus: serverRecord.ledgerStatus === 'DISABLED'
-            ? (localRecord.ledgerStatus || ledger.status || serverRecord.ledgerStatus)
-            : (serverRecord.ledgerStatus || localRecord.ledgerStatus || ledger.status),
-          txHash: serverRecord.txHash || localRecord.txHash || ledger.txHash || '',
-          chainVerification,
-          crossChainStatus: serverRecord.crossChainStatus || localRecord.crossChainStatus || (chainVerification && chainVerification.status) || '',
-          crossChainTxHash: serverRecord.crossChainTxHash || localRecord.crossChainTxHash || (chainVerification && chainVerification.txHash) || '',
-          detail: serverRecord.detail || localRecord.detail || null
-        })
-      })
-      localById.forEach(record => records.push(record))
-      return records.sort((a, b) => Number(b.createdAt || Date.parse(b.timestamp) || 0) - Number(a.createdAt || Date.parse(a.timestamp) || 0))
+    pickNumber(values, fallback) {
+      for (const value of values) {
+        if (value === '' || value == null) continue
+        const parsed = Number(value)
+        if (Number.isFinite(parsed)) return parsed
+      }
+      return fallback
     },
     pickRecords(source) {
       if (Array.isArray(source.records)) return source.records
@@ -504,6 +530,78 @@ export default {
 }
 .records-table {
   width: 100%;
+}
+.records-table::v-deep .el-table__cell {
+  vertical-align: top;
+}
+.record-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.record-cell strong,
+.record-cell span,
+.record-cell code {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.record-cell strong {
+  color: #303133;
+  font-weight: 600;
+}
+.record-cell span {
+  color: #606266;
+}
+.record-cell code,
+.chain-cell code {
+  color: #1f5d8f;
+  font: 12px Consolas, monospace;
+}
+.status-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.status-stack .status-tag {
+  min-width: 68px;
+}
+.chain-cell {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.chain-cell div {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  column-gap: 8px;
+}
+.chain-cell span {
+  color: #909399;
+  font-size: 12px;
+}
+.chain-cell em,
+.chain-cell code {
+  min-width: 0;
+  overflow: hidden;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  white-space: nowrap;
+}
+.row-actions .el-button + .el-button {
+  margin-left: 0;
 }
 .nowrap {
   white-space: nowrap;
