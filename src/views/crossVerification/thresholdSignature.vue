@@ -37,7 +37,6 @@
                   class="message-textarea"
                   type="textarea"
                   :rows="4"
-                  readonly
                   placeholder="请输入各参与节点共同确认并签名的业务内容。"
                   @input="clearInputError"
                 />
@@ -93,8 +92,9 @@
                     type="primary"
                     plain
                     icon="el-icon-document-add"
+                    :loading="generatingSignature"
                     @click="generateSignatureTestData"
-                  >生成测试数据</el-button>
+                  >生成动态测试签名</el-button>
                 </div>
               </el-form-item>
 
@@ -151,21 +151,11 @@
 </template>
 
 <script>
-import { getCrossVerificationHealth, updateVerificationRecordLedger, verifyThresholdSignature } from '@/api/crossVerification'
+import { generateThresholdSignatureTestFixture, getCrossVerificationHealth, updateVerificationRecordLedger, verifyThresholdSignature } from '@/api/crossVerification'
 import JsonResultDialog from './components/JsonResultDialog'
 import VerificationResultPanel from './components/VerificationResultPanel'
 import { VERIFY_TYPES } from '@/api/trafficVerifyChain'
 import { syncCrossChainVerification } from './utils/crossChainVerification'
-
-const DEFAULT_SIGNATURE_BUNDLE = {
-  scheme: 'ECDSA-P256-SHA256',
-  policyId: 'traffic-consortium-dev-local',
-  participantSignatures: {
-    1: 'MEYCIQDZGjJuxQg1kERy7hsjTKrkGhUYh6MvFJRsq3+mOuXKRgIhAIPgR66H0zawNFKmKWAtnrwrkBJDWwqFz0kyqsX1zfR2',
-    2: 'MEYCIQCcHBTaElgF9ts3Npp5TJ3wNTrWFGbubUDBB5+etQe/sgIhAMhSe37a+JI34jx3u4l7w7cDHR66wcem0vxUFKrApc0w',
-    4: 'MEUCIAHGy0fUeCXEluoP1ujxuC8j6R0UKQZFAQCz8mac9zGJAiEA6nHtcF30dsWvEKICnQJV9onnjpby+YrtNQaYnkN+TbI='
-  }
-}
 
 export default {
   name: 'ThresholdSignatureVerification',
@@ -209,6 +199,7 @@ export default {
     return {
       healthStatus: 'unchecked',
       submitting: false,
+      generatingSignature: false,
       form: this.createForm(),
       rules: {
         businessId: [{ required: true, message: '请输入业务标识', trigger: 'blur' }],
@@ -253,16 +244,59 @@ export default {
       this.form.businessId = `traffic-signature-${Date.now()}`
       this.$nextTick(() => this.$refs.form.validateField('businessId'))
     },
-    generateSignatureTestData() {
-      if (!this.form.businessId) this.generateBusinessId()
-      this.form.message = 'traffic speed range approved'
-      this.form.totalNodes = 5
-      this.form.threshold = 3
-      this.form.participantIdsText = '1,2,4'
-      this.form.signatureBundleText = JSON.stringify(DEFAULT_SIGNATURE_BUNDLE, null, 2)
-      this.clearInputError()
-      this.$nextTick(() => this.$refs.form.clearValidate())
-      this.$message.success('多方签名测试数据已生成')
+    async generateSignatureTestData() {
+      const threshold = Number(this.form.threshold)
+      const totalNodes = Number(this.form.totalNodes)
+      if (!Number.isInteger(totalNodes) || totalNodes < 2 || totalNodes > 500) {
+        this.inputError = '总节点数必须是 2 到 500 之间的整数。'
+        return
+      }
+      if (!Number.isInteger(threshold) || threshold < 2 || threshold > totalNodes) {
+        this.inputError = '签名阈值必须是 2 到总节点数之间的整数。'
+        return
+      }
+      const participantIds = this.parseParticipantIds(this.form.participantIdsText)
+      if (!participantIds.ok) {
+        this.inputError = participantIds.message
+        return
+      }
+      if (!String(this.form.businessId || '').trim()) {
+        this.generateBusinessId()
+      }
+      if (!String(this.form.message || '').trim()) {
+        this.inputError = '请输入待签名业务内容。'
+        return
+      }
+
+      this.generatingSignature = true
+      this.inputError = ''
+      try {
+        const response = await generateThresholdSignatureTestFixture({
+          businessId: this.form.businessId,
+          message: this.form.message,
+          threshold,
+          totalNodes,
+          participantIds: participantIds.value
+        })
+        const signedRequest = response && response.request
+        if (!signedRequest || !signedRequest.signatureBundle) {
+          throw new Error('动态 FROST 服务未返回签名凭证。')
+        }
+        this.form.businessId = signedRequest.businessId
+        this.form.message = signedRequest.message
+        this.form.totalNodes = signedRequest.totalNodes
+        this.form.threshold = signedRequest.threshold
+        this.form.participantIdsText = signedRequest.participantIds.join(',')
+        this.form.signatureBundleText = JSON.stringify(signedRequest.signatureBundle, null, 2)
+        this.$nextTick(() => this.$refs.form.clearValidate())
+        this.$message.success(`${threshold}-of-${totalNodes} 真实 FROST 测试签名已生成`)
+      } catch (error) {
+        const responseData = error && error.response && error.response.data
+        this.inputError = (responseData && responseData.message) || error.message || '动态 FROST 测试签名生成失败。'
+        this.$message.error(this.inputError)
+      } finally {
+        this.generatingSignature = false
+      }
     },
     async checkHealth() {
       this.healthStatus = 'unchecked'
@@ -311,22 +345,31 @@ export default {
       }
       try {
         const parsed = JSON.parse(text)
-        if (parsed == null) {
-          return { ok: false, message: '门限签名数据不能为空。' }
+        if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+          return { ok: false, message: '门限签名凭证必须是 JSON 对象。' }
         }
-        if (Array.isArray(parsed)) {
-          return parsed.length
-            ? { ok: true, value: { signatures: parsed }}
-            : { ok: false, message: '门限签名数据不能为空。' }
+        if (parsed.scheme !== 'FROST-ED25519-SHA512') {
+          return { ok: false, message: '签名方案必须是 FROST-ED25519-SHA512。' }
         }
-        if (typeof parsed === 'object') {
-          return Object.keys(parsed).length
-            ? { ok: true, value: parsed }
-            : { ok: false, message: '门限签名数据不能为空。' }
+        if (!String(parsed.policyId || '').trim()) {
+          return { ok: false, message: '门限签名凭证缺少 policyId。' }
         }
-        return { ok: true, value: { signature: String(parsed) }}
+        if (!String(parsed.aggregateSignature || '').trim()) {
+          return { ok: false, message: '门限签名凭证缺少 aggregateSignature。' }
+        }
+        if (Object.prototype.hasOwnProperty.call(parsed, 'participantSignatures')) {
+          return { ok: false, message: '旧版 participantSignatures 已停用，请使用 FROST 聚合签名。' }
+        }
+        return {
+          ok: true,
+          value: {
+            scheme: parsed.scheme,
+            policyId: String(parsed.policyId).trim(),
+            aggregateSignature: String(parsed.aggregateSignature).trim()
+          }
+        }
       } catch (error) {
-        return { ok: true, value: { signature: text }}
+        return { ok: false, message: '门限签名凭证不是有效的 JSON。' }
       }
     },
     submit() {
@@ -381,7 +424,6 @@ export default {
         this.inputError = signatureBundle.message
         return null
       }
-
       this.inputError = ''
       return {
         businessId: this.form.businessId,
@@ -411,7 +453,7 @@ export default {
         verifyType: response.verifyType || 'THRESHOLD_SIGNATURE',
         verifyName: response.verifyName || '多方签名验证',
         businessId: response.businessId || payload.businessId,
-        algorithm: response.algorithm || 'Threshold-Signature',
+        algorithm: response.algorithm || 'FROST-Ed25519-SHA512',
         status: response.status || (response.passed === false ? 'FAIL' : 'PASS'),
         detail: Object.assign(detail, {
           threshold: detail.threshold || payload.threshold,
@@ -457,7 +499,7 @@ export default {
         verifyType: 'THRESHOLD_SIGNATURE',
         verifyName: '多方签名验证',
         businessId: payload && payload.businessId,
-        algorithm: 'Threshold-Signature',
+        algorithm: 'FROST-Ed25519-SHA512',
         status: 'ERROR',
         message: '多方签名验证请求失败，请检查验证服务状态。',
         inputHash: '',

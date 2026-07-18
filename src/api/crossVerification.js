@@ -31,6 +31,14 @@ export function verifyThresholdSignature(data) {
   })
 }
 
+export function generateThresholdSignatureTestFixture(data) {
+  return request({
+    url: '/api/cross-verification/threshold-signature/generate-test-fixture',
+    method: 'post',
+    data
+  })
+}
+
 export function listVerificationRecords(params) {
   return request({
     url: '/api/cross-verification/records',
