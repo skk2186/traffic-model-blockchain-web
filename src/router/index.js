@@ -249,19 +249,19 @@ export const asyncRoutes = [
       }
     }]
   },
-  {
-    path: '/verification',
-    component: Layout,
-    name: 'LegacyVerification',
-    hidden: false,
-    redirect: '/verification/index',
-    children: [{
-      path: 'index',
-      name: 'VerificationWorkbench',
-      component: () => import('@/views/verification/index'),
-      meta: { title: '旧版跨链验证', icon: 'el-icon-circle-check', roles: ['admin', 'user'] }
-    }]
-  },
+  // {
+  //   path: '/verification',
+  //   component: Layout,
+  //   name: 'LegacyVerification',
+  //   hidden: false,
+  //   redirect: '/verification/index',
+  //   children: [{
+  //     path: 'index',
+  //     name: 'VerificationWorkbench',
+  //     component: () => import('@/views/verification/index'),
+  //     meta: { title: '旧版跨链验证', icon: 'el-icon-circle-check', roles: ['admin', 'user'] }
+  //   }]
+  // },
   // {
   //   path: '/documents',
   //   component: Layout,
