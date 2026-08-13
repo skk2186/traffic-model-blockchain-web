@@ -46,7 +46,7 @@ module.exports = {
         changeOrigin: true
       },
       '/': {
-        target: process.env.VUE_APP_ROUTER_TARGET || 'http://175.178.222.73:8250',
+        target: process.env.VUE_APP_ROUTER_TARGET || 'http://175.178.222.73:8254',
         changeOrigin: true
       }
     }

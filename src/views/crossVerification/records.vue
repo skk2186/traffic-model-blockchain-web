@@ -22,9 +22,9 @@
               <el-form-item label="验证方式">
                 <el-select v-model="filters.verifyType" placeholder="全部" clearable style="width: 100%">
                   <el-option label="全部" value="" />
-                  <el-option label="数据完整性验证" value="MERKLE" />
-                  <el-option label="隐私证明验证" value="ZKP" />
-                  <el-option label="多方签名验证" value="THRESHOLD_SIGNATURE" />
+                  <el-option label="Merkle验证" value="MERKLE" />
+                  <el-option label="ZKP验证" value="ZKP" />
+                  <el-option label="门限阈值签名" value="THRESHOLD_SIGNATURE" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -252,7 +252,12 @@ export default {
       ]
     },
     formattedDetailJson() {
-      return this.detailRecord ? JSON.stringify(this.detailRecord, null, 2) : ''
+      if (!this.detailRecord) return ''
+      const displayRecord = { ...this.detailRecord }
+      if (displayRecord.verifyName) {
+        displayRecord.verifyName = this.formatVerifyType(displayRecord.verifyType, displayRecord.verifyName)
+      }
+      return JSON.stringify(displayRecord, null, 2)
     }
   },
   created() {
@@ -411,11 +416,11 @@ export default {
     },
     formatVerifyType(type, name) {
       const typeMap = {
-        MERKLE: '数据完整性验证',
-        ZKP: '隐私证明验证',
-        THRESHOLD_SIGNATURE: '多方签名验证'
+        MERKLE: 'Merkle验证',
+        ZKP: 'ZKP验证',
+        THRESHOLD_SIGNATURE: '门限阈值签名'
       }
-      return name || typeMap[type] || type || '-'
+      return typeMap[type] || name || type || '-'
     },
     verifyStatusMeta(status) {
       const statusMap = {

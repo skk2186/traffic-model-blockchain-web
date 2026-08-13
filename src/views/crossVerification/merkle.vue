@@ -3,7 +3,7 @@
     <el-card class="page-shell cross-verification-card">
       <header class="page-header cross-verification-header">
         <div>
-          <h2>数据完整性验证</h2>
+          <h2>Merkle验证</h2>
           <p>验证交通数据有没有被篡改</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
@@ -279,7 +279,7 @@ export default {
       this.$nextTick(() => {
         this.$refs.form.validateField('sampleIndex')
       })
-      this.$message.success('数据完整性测试数据已生成')
+      this.$message.success('Merkle测试数据已生成')
     },
     async checkHealth() {
       this.healthStatus = 'unchecked'
@@ -367,7 +367,7 @@ export default {
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
-          this.submitError = '数据完整性验证请求失败，请检查验证服务状态。'
+          this.submitError = 'Merkle验证请求失败，请检查验证服务状态。'
           this.$message.error(this.submitError)
         } finally {
           this.submitting = false
@@ -378,7 +378,7 @@ export default {
       const detail = Object.assign({}, response.detail || {})
       return Object.assign({}, response, {
         verifyType: response.verifyType || VERIFY_TYPES.MERKLE,
-        verifyName: response.verifyName || '数据完整性验证',
+        verifyName: response.verifyName || 'Merkle验证',
         businessId: response.businessId || payload.businessId,
         algorithm: response.algorithm || 'Merkle-SHA256',
         status: response.status || (response.passed === false ? 'FAIL' : 'PASS'),
@@ -556,32 +556,32 @@ export default {
       const ledger = result && result.ledger ? result.ledger : {}
       const chainVerification = result && result.chainVerification ? result.chainVerification : {}
       if (status === 'ERROR') {
-        this.$message.error(result.message || '数据完整性验证异常')
+        this.$message.error(result.message || 'Merkle验证异常')
         return
       }
       if (status === 'FAIL') {
-        this.$message.warning(result.message || '数据完整性验证未通过')
+        this.$message.warning(result.message || 'Merkle验证未通过')
         return
       }
       if (ledger.status === 'SUCCESS' && chainVerification.status === 'SUCCESS') {
-        this.$message.success('数据完整性验证完成，可信账本同步成功')
+        this.$message.success('Merkle验证完成，可信账本同步成功')
         return
       }
       if (ledger.status === 'FAILED' || chainVerification.status === 'FAILED') {
-        this.$message.warning((chainVerification.message || ledger.message) || '数据完整性验证通过，但可信账本同步未完成')
+        this.$message.warning((chainVerification.message || ledger.message) || 'Merkle验证通过，但可信账本同步未完成')
         return
       }
-      this.$message.success('数据完整性验证完成')
+      this.$message.success('Merkle验证完成')
     },
     buildErrorResult(error, payload) {
       return {
         recordId: `local-error-${Date.now()}`,
         verifyType: VERIFY_TYPES.MERKLE,
-        verifyName: '数据完整性验证',
+        verifyName: 'Merkle验证',
         businessId: payload.businessId,
         algorithm: 'Merkle-SHA256',
         status: 'ERROR',
-        message: '数据完整性验证请求失败，请检查验证服务状态。',
+        message: 'Merkle验证请求失败，请检查验证服务状态。',
         resultHash: '',
         ledgerStatus: 'FAILED',
         ledger: {

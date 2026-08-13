@@ -221,9 +221,9 @@ content-type: application/json;charset=UTF-8
 
 | 路由 | 页面 | 文件 |
 | --- | --- | --- |
-| `/cross-verification/merkle` | 数据完整性验证 | `src/views/crossVerification/merkle.vue` |
-| `/cross-verification/zkp` | 隐私证明验证 | `src/views/crossVerification/zkp.vue` |
-| `/cross-verification/threshold-signature` | 多方签名验证 | `src/views/crossVerification/thresholdSignature.vue` |
+| `/cross-verification/merkle` | Merkle验证 | `src/views/crossVerification/merkle.vue` |
+| `/cross-verification/zkp` | ZKP验证 | `src/views/crossVerification/zkp.vue` |
+| `/cross-verification/threshold-signature` | 门限阈值签名 | `src/views/crossVerification/thresholdSignature.vue` |
 | `/cross-verification/records` | 验证记录 | `src/views/crossVerification/records.vue` |
 
 ### 7.1 接口封装
@@ -240,7 +240,7 @@ content-type: application/json;charset=UTF-8
 | `getVerificationRecord(recordId)` | `GET /api/cross-verification/records/{recordId}` |
 | `updateVerificationRecordLedger(recordId, data)` | `PUT /api/cross-verification/records/{recordId}/ledger` |
 
-### 7.2 数据完整性验证
+### 7.2 Merkle验证
 
 页面能力：
 
@@ -264,7 +264,7 @@ content-type: application/json;charset=UTF-8
 }
 ```
 
-### 7.3 隐私证明验证
+### 7.3 ZKP验证
 
 页面能力：
 
@@ -287,7 +287,7 @@ content-type: application/json;charset=UTF-8
 }
 ```
 
-### 7.4 多方签名验证
+### 7.4 门限阈值签名
 
 页面能力：
 

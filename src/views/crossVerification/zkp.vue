@@ -3,7 +3,7 @@
     <el-card class="page-shell cross-verification-card">
       <header class="page-header cross-verification-header">
         <div>
-          <h2>隐私证明验证</h2>
+          <h2>ZKP验证</h2>
           <p>验证交通数据相关证明是否满足指定约束</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
@@ -510,7 +510,7 @@ export default {
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
-          this.submitError = '隐私证明验证请求失败，请检查验证服务状态。'
+          this.submitError = 'ZKP验证请求失败，请检查验证服务状态。'
           this.$message.error(this.submitError)
         } finally {
           this.submitting = false
@@ -564,7 +564,7 @@ export default {
       const proofSummary = Object.assign({}, detail.proofSummary || {})
       return Object.assign({}, response, {
         verifyType: response.verifyType || 'ZKP',
-        verifyName: response.verifyName || '隐私证明验证',
+        verifyName: response.verifyName || 'ZKP验证',
         businessId: response.businessId || payload.businessId,
         algorithm: response.algorithm || this.form.algorithm,
         status: response.status || (response.passed === false ? 'FAIL' : 'PASS'),
@@ -586,34 +586,34 @@ export default {
     },
     showSubmitMessage(result) {
       if (result.status === 'ERROR') {
-        this.$message.error(result.message || '隐私证明验证异常')
+        this.$message.error(result.message || 'ZKP验证异常')
         return
       }
       if (result.status === 'FAIL') {
-        this.$message.warning(result.message || '隐私证明验证未通过')
+        this.$message.warning(result.message || 'ZKP验证未通过')
         return
       }
       const ledger = result.ledger || {}
       const chain = result.chainVerification || {}
       if (ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
-        this.$message.success('隐私证明验证完成，可信账本同步和 Fabric 跨链验证成功')
+        this.$message.success('ZKP验证完成，可信账本同步和 Fabric 跨链验证成功')
         return
       }
       if (ledger.status === 'FAILED' || chain.status === 'FAILED') {
-        this.$message.warning(chain.message || ledger.message || '隐私证明验证通过，但跨链同步未完成')
+        this.$message.warning(chain.message || ledger.message || 'ZKP验证通过，但跨链同步未完成')
         return
       }
-      this.$message.success('隐私证明验证完成')
+      this.$message.success('ZKP验证完成')
     },
     buildErrorResult(error, payload) {
       return {
         recordId: `local-error-${Date.now()}`,
         verifyType: 'ZKP',
-        verifyName: '隐私证明验证',
+        verifyName: 'ZKP验证',
         businessId: payload && payload.businessId,
         algorithm: this.form.algorithm,
         status: 'ERROR',
-        message: '隐私证明验证请求失败，请检查验证服务状态。',
+        message: 'ZKP验证请求失败，请检查验证服务状态。',
         proofHash: '',
         resultHash: '',
         ledgerStatus: 'LEDGER_FAILED',

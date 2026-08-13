@@ -143,20 +143,21 @@ export default {
       return rows
     },
     prettyResult() {
-      return this.result ? JSON.stringify(this.result, null, 2) : ''
+      if (!this.result) return ''
+      return JSON.stringify({
+        ...this.result,
+        verifyName: this.getVerifyName()
+      }, null, 2)
     }
   },
   methods: {
     getVerifyName() {
-      if (this.result) {
-        return this.result.verifyName || this.result.verifyType || ''
-      }
       const nameMap = {
-        merkle: '数据完整性验证',
-        zkp: '隐私证明验证',
-        threshold: '多方签名验证'
+        merkle: 'Merkle验证',
+        zkp: 'ZKP验证',
+        threshold: '门限阈值签名'
       }
-      return nameMap[this.verifyType] || ''
+      return nameMap[this.verifyType] || (this.result && (this.result.verifyName || this.result.verifyType)) || ''
     },
     defaultValueRows() {
       const commonRows = [

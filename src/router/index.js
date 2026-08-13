@@ -66,34 +66,34 @@ export const asyncRoutes = [
       }
     ]
   },
-  // {
-  //   path: '/router',
-  //   component: Layout,
-  //   name: 'Router',
-  //   redirect: '/router/routerManager',
-  //   children: [
-  //     {
-  //       name: 'routerManager',
-  //       path: 'routerManager',
-  //       component: () => import('@/views/router/routerManager'),
-  //       meta: {
-  //         title: '节点管理',
-  //         icon: 'el-icon-connection',
-  //         roles: ['admin', 'user']
-  //       }
-  //     },
-  //     {
-  //       path: 'routerGuide',
-  //       hidden: true,
-  //       component: () => import('@/views/router/routerGuide'),
-  //       meta: {
-  //         title: '节点接入',
-  //         icon: 'el-icon-upload',
-  //         roles: ['admin', 'user']
-  //       }
-  //     }
-  //   ]
-  // },
+  {
+    path: '/router',
+    component: Layout,
+    name: 'Router',
+    redirect: '/router/routerManager',
+    children: [
+      {
+        name: 'routerManager',
+        path: 'routerManager',
+        component: () => import('@/views/router/routerManager'),
+        meta: {
+          title: '节点管理',
+          icon: 'el-icon-connection',
+          roles: ['admin', 'user']
+        }
+      },
+      {
+        path: 'routerGuide',
+        hidden: true,
+        component: () => import('@/views/router/routerGuide'),
+        meta: {
+          title: '节点接入',
+          icon: 'el-icon-upload',
+          roles: ['admin', 'user']
+        }
+      }
+    ]
+  },
   {
     path: '/resource',
     component: Layout,
@@ -200,7 +200,7 @@ export const asyncRoutes = [
         component: () => import('@/views/crossVerification/merkle'),
         name: 'MerkleVerification',
         meta: {
-          title: '数据完整性验证',
+          title: 'Merkle验证',
           roles: ['admin', 'user']
         }
       },
@@ -209,7 +209,7 @@ export const asyncRoutes = [
         component: () => import('@/views/crossVerification/zkp'),
         name: 'ZkpVerification',
         meta: {
-          title: '隐私证明验证',
+          title: 'ZKP验证',
           roles: ['admin', 'user']
         }
       },
@@ -218,7 +218,7 @@ export const asyncRoutes = [
         component: () => import('@/views/crossVerification/thresholdSignature'),
         name: 'ThresholdSignatureVerification',
         meta: {
-          title: '多方签名验证',
+          title: '门限阈值签名',
           roles: ['admin', 'user']
         }
       },

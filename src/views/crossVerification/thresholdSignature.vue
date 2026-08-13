@@ -3,7 +3,7 @@
     <el-card class="page-shell cross-verification-card">
       <header class="page-header cross-verification-header">
         <div>
-          <h2>多方签名验证</h2>
+          <h2>门限阈值签名</h2>
           <p>验证是否有足够多节点确认</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
@@ -398,7 +398,7 @@ export default {
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
-          this.submitError = '多方签名验证请求失败，请检查验证服务状态。'
+          this.submitError = '门限阈值签名请求失败，请检查验证服务状态。'
           this.$message.error(this.submitError)
         } finally {
           this.submitting = false
@@ -451,7 +451,7 @@ export default {
       const detail = Object.assign({}, response.detail || {})
       return Object.assign({}, response, {
         verifyType: response.verifyType || 'THRESHOLD_SIGNATURE',
-        verifyName: response.verifyName || '多方签名验证',
+        verifyName: response.verifyName || '门限阈值签名',
         businessId: response.businessId || payload.businessId,
         algorithm: response.algorithm || 'FROST-Ed25519-SHA512',
         status: response.status || (response.passed === false ? 'FAIL' : 'PASS'),
@@ -474,34 +474,34 @@ export default {
     },
     showSubmitMessage(result) {
       if (result.status === 'ERROR') {
-        this.$message.error(result.message || '多方签名验证异常')
+        this.$message.error(result.message || '门限阈值签名异常')
         return
       }
       if (result.status === 'FAIL') {
-        this.$message.warning(result.message || '多方签名验证未通过')
+        this.$message.warning(result.message || '门限阈值签名未通过')
         return
       }
       const ledger = result.ledger || {}
       const chain = result.chainVerification || {}
       if (ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
-        this.$message.success('多方签名验证完成，可信账本同步和 Fabric 跨链验证成功')
+        this.$message.success('门限阈值签名完成，可信账本同步和 Fabric 跨链验证成功')
         return
       }
       if (ledger.status === 'FAILED' || chain.status === 'FAILED') {
-        this.$message.warning(chain.message || ledger.message || '多方签名验证通过，但跨链同步未完成')
+        this.$message.warning(chain.message || ledger.message || '门限阈值签名通过，但跨链同步未完成')
         return
       }
-      this.$message.success('多方签名验证完成')
+      this.$message.success('门限阈值签名完成')
     },
     buildErrorResult(error, payload) {
       return {
         recordId: `local-error-${Date.now()}`,
         verifyType: 'THRESHOLD_SIGNATURE',
-        verifyName: '多方签名验证',
+        verifyName: '门限阈值签名',
         businessId: payload && payload.businessId,
         algorithm: 'FROST-Ed25519-SHA512',
         status: 'ERROR',
-        message: '多方签名验证请求失败，请检查验证服务状态。',
+        message: '门限阈值签名请求失败，请检查验证服务状态。',
         inputHash: '',
         proofHash: '',
         resultHash: '',
