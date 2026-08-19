@@ -126,8 +126,8 @@ export default {
     statusRows() {
       return [
         { label: '验证状态', tag: this.result ? this.verifyStatus : null },
-        { label: '账本同步', tag: this.result ? this.ledgerStatus : null },
-        { label: 'Fabric 验证', tag: this.result ? this.getChainVerificationStatus() : null }
+        { label: this.getLedgerLabel(), tag: this.result ? this.ledgerStatus : null },
+        { label: this.getChainVerificationLabel(), tag: this.result ? this.getChainVerificationStatus() : null }
       ]
     },
     valueRows() {
@@ -137,33 +137,32 @@ export default {
       const rows = [
         ...this.extraRows(),
         { label: '结果 Hash', value: this.getResultHash() },
-        { label: '交易哈希', value: this.getTxHash() },
-        { label: 'Fabric 跨链交易哈希', value: this.getChainVerificationTxHash() }
+        { label: `${this.getLedgerLabel()}交易哈希`, value: this.getTxHash() },
+        { label: `${this.getChainVerificationLabel()}交易哈希`, value: this.getChainVerificationTxHash() }
       ]
       return rows
     },
     prettyResult() {
-      if (!this.result) return ''
-      return JSON.stringify({
-        ...this.result,
-        verifyName: this.getVerifyName()
-      }, null, 2)
+      return this.result ? JSON.stringify(this.result, null, 2) : ''
     }
   },
   methods: {
     getVerifyName() {
-      const nameMap = {
-        merkle: 'Merkle验证',
-        zkp: 'ZKP验证',
-        threshold: '门限阈值签名'
+      if (this.result) {
+        return this.result.verifyName || this.result.verifyType || ''
       }
-      return nameMap[this.verifyType] || (this.result && (this.result.verifyName || this.result.verifyType)) || ''
+      const nameMap = {
+        merkle: '数据完整性验证',
+        zkp: '隐私证明验证',
+        threshold: '多方签名验证'
+      }
+      return nameMap[this.verifyType] || ''
     },
     defaultValueRows() {
       const commonRows = [
         { label: '结果 Hash', value: '' },
         { label: '交易哈希', value: '' },
-        { label: 'Fabric 跨链交易哈希', value: '' }
+        { label: '跨链验证交易哈希', value: '' }
       ]
       if (this.verifyType === 'zkp') {
         return [
@@ -297,9 +296,25 @@ export default {
     getTxHash() {
       const ledger = this.result && this.result.ledger
       return this.result.txHash ||
+        this.result.txhash ||
+        this.result.txid ||
+        this.result.txId ||
+        this.result.txID ||
+        this.result.transactionId ||
+        this.result.transactionID ||
         this.result.transactionHash ||
-        (ledger && (ledger.txHash || ledger.transactionHash)) ||
+        (ledger && (ledger.txHash || ledger.txhash || ledger.txid || ledger.txId || ledger.txID || ledger.transactionId || ledger.transactionID || ledger.transactionHash)) ||
         ''
+    },
+    getLedgerLabel() {
+      const ledger = this.result && this.result.ledger
+      const chainName = ledger && (ledger.sourceChainLabel || ledger.sourceChain)
+      const labels = {
+        bcos3: 'FISCO BCOS 3.0',
+        fabric: 'Fabric 1.4',
+        chainmaker: 'ChainMaker'
+      }
+      return chainName ? `${labels[chainName] || chainName} 写入` : '账本同步'
     },
     getChainVerificationStatus() {
       const chain = this.result && this.result.chainVerification
@@ -319,9 +334,19 @@ export default {
       }
       return current
     },
+    getChainVerificationLabel() {
+      const chain = this.result && this.result.chainVerification
+      const chainName = chain && (chain.verificationChainLabel || chain.verificationChain)
+      const labels = {
+        bcos3: 'FISCO BCOS 3.0',
+        fabric: 'Fabric 1.4',
+        chainmaker: 'ChainMaker'
+      }
+      return chainName ? `${labels[chainName] || chainName} 验证` : '目标链验证'
+    },
     getChainVerificationTxHash() {
       const chain = this.result && this.result.chainVerification
-      return chain && (chain.txHash || chain.transactionHash) || ''
+      return chain && (chain.txHash || chain.txhash || chain.txid || chain.txId || chain.txID || chain.transactionId || chain.transactionID || chain.transactionHash) || ''
     },
     copyValue(value, successMessage = '已复制') {
       if (!value) return

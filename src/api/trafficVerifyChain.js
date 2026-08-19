@@ -2,6 +2,13 @@ import { call, sendTransaction } from '@/api/transaction'
 
 export const BCOS3_VERIFY_PATH = 'payment.bcos3.TrafficVerifyStore'
 export const FABRIC_VERIFY_PATH = 'payment.fabric.traffic_verify_store'
+export const CHAINMAKER_VERIFY_PATH = 'payment.chainmaker.TrafficVerifyStoreCMV1'
+
+export const VERIFY_CHAINS = [
+  { value: 'bcos3', label: 'FISCO BCOS 3.0', path: BCOS3_VERIFY_PATH },
+  { value: 'fabric', label: 'Fabric 1.4', path: FABRIC_VERIFY_PATH },
+  { value: 'chainmaker', label: 'ChainMaker', path: CHAINMAKER_VERIFY_PATH }
+]
 
 export const VERIFY_TYPES = {
   MERKLE: 'MERKLE',
@@ -14,6 +21,18 @@ const METHOD_GET_RECORD_WITH_STATUS = 'getRecordWithStatus'
 const METHOD_INTERCHAIN = 'interchain'
 const METHOD_CALLBACK = 'callback'
 const METHOD_GET_LAST_CALLBACK_RESULT = 'getLastCallbackResult'
+const TRANSACTION_HASH_KEYS = [
+  'txhash',
+  'txHash',
+  'txid',
+  'txId',
+  'txID',
+  'tx_id',
+  'transactionHash',
+  'transactionId',
+  'transactionID',
+  'transaction_id'
+]
 
 function hasOwn(target, key) {
   return Object.prototype.hasOwnProperty.call(target, key)
@@ -169,28 +188,15 @@ function parseRecordPayload(payload, raw, depth) {
   }
 }
 
-function responseErrorCode(response) {
-  if (!isObject(response)) {
-    return 0
-  }
-  if (hasOwn(response, 'errorCode')) {
-    return response.errorCode
-  }
-  return 0
-}
-
-function nestedResponseErrorCode(response) {
-  if (!isObject(response) || !isObject(response.data)) {
-    return 0
-  }
-  if (hasOwn(response.data, 'errorCode')) {
-    return response.data.errorCode
-  }
-  return 0
-}
-
 function findField(value, names, depth) {
-  if (depth > 5 || value == null) {
+  if (depth > 12 || value == null) {
+    return null
+  }
+  if (typeof value === 'string') {
+    const parsed = parseJsonIfPossible(value)
+    if (parsed !== value) {
+      return findField(parsed, names, depth + 1)
+    }
     return null
   }
   if (Array.isArray(value)) {
@@ -217,6 +223,29 @@ function findField(value, names, depth) {
     }
   }
   return null
+}
+
+function hasNonZeroErrorCode(value, depth) {
+  if (depth > 6 || value == null) {
+    return false
+  }
+  if (typeof value === 'string') {
+    const parsed = parseJsonIfPossible(value)
+    return parsed !== value && hasNonZeroErrorCode(parsed, depth + 1)
+  }
+  if (Array.isArray(value)) {
+    return value.some(item => hasNonZeroErrorCode(item, depth + 1))
+  }
+  if (!isObject(value)) {
+    return false
+  }
+  if (hasOwn(value, 'errorCode')) {
+    const errorCode = Number(value.errorCode)
+    if (!Number.isNaN(errorCode) && errorCode !== 0) {
+      return true
+    }
+  }
+  return Object.keys(value).some(key => hasNonZeroErrorCode(value[key], depth + 1))
 }
 
 function buildResourceRequest(path, method, args) {
@@ -251,21 +280,27 @@ function isExpectedCallbackRecord(result, recordKey) {
 }
 
 export function getVerifyPath(chain) {
-  if (chain === 'bcos3') {
-    return BCOS3_VERIFY_PATH
-  }
-  if (chain === 'fabric') {
-    return FABRIC_VERIFY_PATH
+  const definition = VERIFY_CHAINS.find(item => item.value === chain)
+  if (definition) {
+    return definition.path
   }
   throw new Error('Unsupported verify chain: ' + chain)
 }
 
+export function getVerifyChainLabel(chain) {
+  const definition = VERIFY_CHAINS.find(item => item.value === chain)
+  return definition ? definition.label : chain || '目标链'
+}
+
+export function getVerifyChainPath(chain) {
+  const resourcePath = getVerifyPath(chain)
+  return resourcePath.split('.').slice(0, 2).join('.')
+}
+
 export function getOtherChain(chain) {
-  if (chain === 'bcos3') {
-    return 'fabric'
-  }
-  if (chain === 'fabric') {
-    return 'bcos3'
+  const definition = VERIFY_CHAINS.find(item => item.value !== chain)
+  if (definition) {
+    return definition.value
   }
   throw new Error('Unsupported verify chain: ' + chain)
 }
@@ -303,12 +338,11 @@ export function parseRecordResult(response) {
 
 export function parseTxResult(response) {
   const result = parseWeCrossResult(response)
-  const errorCode = responseErrorCode(response)
-  const innerErrorCode = nestedResponseErrorCode(response)
-  const txhash = findField(response, ['txhash', 'txHash', 'transactionHash', 'transaction_hash', 'hash'], 0)
-  const blockNum = findField(response, ['blockNum', 'blockNumber', 'block_number'], 0)
+  const txhash = findField(response, TRANSACTION_HASH_KEYS, 0) ||
+    findField(response, ['hash'], 0)
+  const blockNum = findField(response, ['blockNum', 'blockNumber', 'block_number', 'blockHeight'], 0)
   return {
-    success: errorCode === 0 && innerErrorCode === 0,
+    success: !hasNonZeroErrorCode(response, 0),
     txhash: txhash == null ? null : txhash,
     blockNum: blockNum == null ? null : blockNum,
     result,

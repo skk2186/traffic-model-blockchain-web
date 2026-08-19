@@ -3,7 +3,7 @@
     <el-card class="page-shell cross-verification-card">
       <header class="page-header cross-verification-header">
         <div>
-          <h2>门限阈值签名</h2>
+          <h2>多方签名验证</h2>
           <p>验证是否有足够多节点确认</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
@@ -30,6 +30,34 @@
                   <el-button slot="append" @click="generateBusinessId">生成</el-button>
                 </el-input>
               </el-form-item>
+
+              <el-row :gutter="12">
+                <el-col :xs="24" :sm="12">
+                  <el-form-item label="签名凭证写入链" prop="sourceChain">
+                    <el-select v-model="form.sourceChain" style="width: 100%" @change="handleSourceChainChange">
+                      <el-option
+                        v-for="chain in chainOptions"
+                        :key="chain.value"
+                        :label="chain.label"
+                        :value="chain.value"
+                      />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :sm="12">
+                  <el-form-item label="签名凭证验证链" prop="verificationChain">
+                    <el-select v-model="form.verificationChain" style="width: 100%">
+                      <el-option
+                        v-for="chain in chainOptions"
+                        :key="chain.value"
+                        :label="chain.label"
+                        :value="chain.value"
+                        :disabled="chain.value === form.sourceChain"
+                      />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
 
               <el-form-item label="待签名业务内容" prop="message">
                 <el-input
@@ -154,7 +182,7 @@
 import { generateThresholdSignatureTestFixture, getCrossVerificationHealth, updateVerificationRecordLedger, verifyThresholdSignature } from '@/api/crossVerification'
 import JsonResultDialog from './components/JsonResultDialog'
 import VerificationResultPanel from './components/VerificationResultPanel'
-import { VERIFY_TYPES } from '@/api/trafficVerifyChain'
+import { VERIFY_CHAINS, VERIFY_TYPES, getVerifyChainPath, getVerifyPath } from '@/api/trafficVerifyChain'
 import { syncCrossChainVerification } from './utils/crossChainVerification'
 
 export default {
@@ -203,6 +231,20 @@ export default {
       form: this.createForm(),
       rules: {
         businessId: [{ required: true, message: '请输入业务标识', trigger: 'blur' }],
+        sourceChain: [{ required: true, message: '请选择签名凭证写入链', trigger: 'change' }],
+        verificationChain: [
+          { required: true, message: '请选择签名凭证验证链', trigger: 'change' },
+          {
+            validator: (rule, value, callback) => {
+              if (value && value === this.form.sourceChain) {
+                callback(new Error('签名凭证写入链和签名凭证验证链不能相同'))
+                return
+              }
+              callback()
+            },
+            trigger: 'change'
+          }
+        ],
         message: [{ required: true, message: '请输入待签名业务内容', trigger: 'blur' }],
         totalNodes: [{ validator: validatePositiveNumber, trigger: 'change' }],
         threshold: [{ validator: validateThreshold, trigger: 'change' }],
@@ -213,7 +255,8 @@ export default {
       submitError: '',
       result: null,
       jsonDialogVisible: false,
-      jsonDialogData: null
+      jsonDialogData: null,
+      chainOptions: VERIFY_CHAINS
     }
   },
   computed: {
@@ -233,6 +276,8 @@ export default {
     createForm() {
       return {
         businessId: '',
+        sourceChain: 'bcos3',
+        verificationChain: 'fabric',
         message: 'traffic speed range approved',
         totalNodes: 5,
         threshold: 3,
@@ -243,6 +288,13 @@ export default {
     generateBusinessId() {
       this.form.businessId = `traffic-signature-${Date.now()}`
       this.$nextTick(() => this.$refs.form.validateField('businessId'))
+    },
+    handleSourceChainChange(sourceChain) {
+      if (this.form.verificationChain === sourceChain) {
+        const fallback = this.chainOptions.find(chain => chain.value !== sourceChain)
+        this.form.verificationChain = fallback ? fallback.value : ''
+      }
+      this.$nextTick(() => this.$refs.form.validateField('verificationChain'))
     },
     async generateSignatureTestData() {
       const threshold = Number(this.form.threshold)
@@ -389,7 +441,10 @@ export default {
           let nextResult = this.normalizeResult(response, payload)
           this.result = nextResult
           if (nextResult.status === 'PASS') {
-            nextResult = await syncCrossChainVerification(nextResult, VERIFY_TYPES.THRESHOLD_SIGNATURE, current => {
+            nextResult = await syncCrossChainVerification(nextResult, VERIFY_TYPES.THRESHOLD_SIGNATURE, {
+              sourceChain: this.form.sourceChain,
+              verificationChain: this.form.verificationChain
+            }, current => {
               this.result = current
             })
             this.result = nextResult
@@ -398,7 +453,7 @@ export default {
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
-          this.submitError = '门限阈值签名请求失败，请检查验证服务状态。'
+          this.submitError = '多方签名验证请求失败，请检查验证服务状态。'
           this.$message.error(this.submitError)
         } finally {
           this.submitting = false
@@ -427,6 +482,8 @@ export default {
       this.inputError = ''
       return {
         businessId: this.form.businessId,
+        sourceChain: this.form.sourceChain,
+        verificationChain: this.form.verificationChain,
         message: this.form.message,
         threshold,
         totalNodes,
@@ -451,7 +508,7 @@ export default {
       const detail = Object.assign({}, response.detail || {})
       return Object.assign({}, response, {
         verifyType: response.verifyType || 'THRESHOLD_SIGNATURE',
-        verifyName: response.verifyName || '门限阈值签名',
+        verifyName: response.verifyName || '多方签名验证',
         businessId: response.businessId || payload.businessId,
         algorithm: response.algorithm || 'FROST-Ed25519-SHA512',
         status: response.status || (response.passed === false ? 'FAIL' : 'PASS'),
@@ -474,38 +531,54 @@ export default {
     },
     showSubmitMessage(result) {
       if (result.status === 'ERROR') {
-        this.$message.error(result.message || '门限阈值签名异常')
+        this.$message.error(result.message || '多方签名验证异常')
         return
       }
       if (result.status === 'FAIL') {
-        this.$message.warning(result.message || '门限阈值签名未通过')
+        this.$message.warning(result.message || '多方签名验证未通过')
         return
       }
       const ledger = result.ledger || {}
       const chain = result.chainVerification || {}
       if (ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
-        this.$message.success('门限阈值签名完成，可信账本同步和 Fabric 跨链验证成功')
+        this.$message.success('多方签名验证完成，可信账本同步和 Fabric 跨链验证成功')
         return
       }
       if (ledger.status === 'FAILED' || chain.status === 'FAILED') {
-        this.$message.warning(chain.message || ledger.message || '门限阈值签名通过，但跨链同步未完成')
+        this.$message.warning(chain.message || ledger.message || '多方签名验证通过，但跨链同步未完成')
         return
       }
-      this.$message.success('门限阈值签名完成')
+      this.$message.success('多方签名验证完成')
     },
     buildErrorResult(error, payload) {
       return {
         recordId: `local-error-${Date.now()}`,
         verifyType: 'THRESHOLD_SIGNATURE',
-        verifyName: '门限阈值签名',
+        verifyName: '多方签名验证',
         businessId: payload && payload.businessId,
         algorithm: 'FROST-Ed25519-SHA512',
         status: 'ERROR',
-        message: '门限阈值签名请求失败，请检查验证服务状态。',
+        message: '多方签名验证请求失败，请检查验证服务状态。',
         inputHash: '',
         proofHash: '',
         resultHash: '',
         ledgerStatus: 'LEDGER_FAILED',
+        ledger: {
+          enabled: true,
+          status: 'FAILED',
+          sourceChain: payload && payload.sourceChain,
+          chainPath: payload && payload.sourceChain ? getVerifyChainPath(payload.sourceChain) : '',
+          resourcePath: payload && payload.sourceChain ? getVerifyPath(payload.sourceChain) : '',
+          message: error && error.message
+        },
+        chainVerification: {
+          enabled: true,
+          status: 'FAILED',
+          sourceChain: payload && payload.sourceChain,
+          verificationChain: payload && payload.verificationChain,
+          resourcePath: payload && payload.verificationChain ? getVerifyPath(payload.verificationChain) : '',
+          message: error && error.message
+        },
         detail: {
           threshold: payload && payload.threshold,
           totalNodes: payload && payload.totalNodes,

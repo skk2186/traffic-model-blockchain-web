@@ -3,7 +3,7 @@
     <el-card class="page-shell cross-verification-card">
       <header class="page-header cross-verification-header">
         <div>
-          <h2>Merkle验证</h2>
+          <h2>数据完整性验证</h2>
           <p>验证交通数据有没有被篡改</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
@@ -30,6 +30,38 @@
                   <el-button slot="append" @click="generateBusinessId">生成</el-button>
                 </el-input>
               </el-form-item>
+
+              <el-row :gutter="12">
+                <el-col :xs="24" :sm="12">
+                  <el-form-item label="数据写入链" prop="sourceChain">
+                    <el-select
+                      v-model="form.sourceChain"
+                      style="width: 100%"
+                      @change="handleSourceChainChange"
+                    >
+                      <el-option
+                        v-for="chain in chainOptions"
+                        :key="chain.value"
+                        :label="chain.label"
+                        :value="chain.value"
+                      />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :sm="12">
+                  <el-form-item label="数据验证链" prop="verificationChain">
+                    <el-select v-model="form.verificationChain" style="width: 100%">
+                      <el-option
+                        v-for="chain in chainOptions"
+                        :key="chain.value"
+                        :label="chain.label"
+                        :value="chain.value"
+                        :disabled="chain.value === form.sourceChain"
+                      />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
 
               <el-form-item label="输入方式">
                 <el-radio-group v-model="form.inputMode" size="small" @change="clearInputError">
@@ -167,10 +199,12 @@
 <script>
 import { getCrossVerificationHealth, updateVerificationRecordLedger, verifyMerkle } from '@/api/crossVerification'
 import {
-  BCOS3_VERIFY_PATH,
-  FABRIC_VERIFY_PATH,
+  VERIFY_CHAINS,
   VERIFY_TYPES,
   buildRecordKey,
+  getVerifyChainLabel,
+  getVerifyChainPath,
+  getVerifyPath,
   getVerifyRecord,
   interchainQueryRecord,
   waitLastCallbackResult,
@@ -183,8 +217,6 @@ import { isHex64 } from './utils/verificationUtils'
 
 const DEFAULT_MANUAL_TEXT = ''
 const EXAMPLE_MANUAL_TEXT = 'camera=A001,speed=42,lane=2\ncamera=A001,speed=38,lane=2\ncamera=A002,speed=51,lane=1'
-const TARGET_CHAIN = 'bcos3'
-const VERIFY_FROM_CHAIN = 'fabric'
 
 export default {
   name: 'MerkleVerification',
@@ -223,6 +255,20 @@ export default {
       form: this.createForm(),
       rules: {
         businessId: [{ required: true, message: '请输入业务标识', trigger: 'blur' }],
+        sourceChain: [{ required: true, message: '请选择数据写入链', trigger: 'change' }],
+        verificationChain: [
+          { required: true, message: '请选择数据验证链', trigger: 'change' },
+          {
+            validator: (rule, value, callback) => {
+              if (value && value === this.form.sourceChain) {
+                callback(new Error('数据写入链和数据验证链不能相同'))
+                return
+              }
+              callback()
+            },
+            trigger: 'change'
+          }
+        ],
         expectedRoot: [{ validator: validateExpectedRoot, trigger: 'blur' }],
         sampleIndex: [{ validator: validateSampleIndex, trigger: 'blur' }]
       },
@@ -233,7 +279,8 @@ export default {
       submitError: '',
       result: null,
       jsonDialogVisible: false,
-      jsonDialogData: null
+      jsonDialogData: null,
+      chainOptions: VERIFY_CHAINS
     }
   },
   computed: {
@@ -259,6 +306,8 @@ export default {
     createForm() {
       return {
         businessId: '',
+        sourceChain: 'bcos3',
+        verificationChain: 'fabric',
         inputMode: 'manual',
         manualText: DEFAULT_MANUAL_TEXT,
         sampleIndex: '',
@@ -271,6 +320,13 @@ export default {
         this.$refs.form.validateField('businessId')
       })
     },
+    handleSourceChainChange(sourceChain) {
+      if (this.form.verificationChain === sourceChain) {
+        const fallback = this.chainOptions.find(chain => chain.value !== sourceChain)
+        this.form.verificationChain = fallback ? fallback.value : ''
+      }
+      this.$nextTick(() => this.$refs.form.validateField('verificationChain'))
+    },
     generateMerkleTestData() {
       if (!this.form.businessId) this.generateBusinessId()
       this.form.inputMode = 'manual'
@@ -279,7 +335,7 @@ export default {
       this.$nextTick(() => {
         this.$refs.form.validateField('sampleIndex')
       })
-      this.$message.success('Merkle测试数据已生成')
+      this.$message.success('数据完整性测试数据已生成')
     },
     async checkHealth() {
       this.healthStatus = 'unchecked'
@@ -350,6 +406,8 @@ export default {
           leafItems: this.leafItems,
           expectedRoot: this.form.expectedRoot || undefined,
           sampleIndex: this.parseSampleIndex(),
+          sourceChain: this.form.sourceChain,
+          verificationChain: this.form.verificationChain,
           writeLedger: false
         }
 
@@ -367,7 +425,7 @@ export default {
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
-          this.submitError = 'Merkle验证请求失败，请检查验证服务状态。'
+          this.submitError = '数据完整性验证请求失败，请检查验证服务状态。'
           this.$message.error(this.submitError)
         } finally {
           this.submitting = false
@@ -378,7 +436,7 @@ export default {
       const detail = Object.assign({}, response.detail || {})
       return Object.assign({}, response, {
         verifyType: response.verifyType || VERIFY_TYPES.MERKLE,
-        verifyName: response.verifyName || 'Merkle验证',
+        verifyName: response.verifyName || '数据完整性验证',
         businessId: response.businessId || payload.businessId,
         algorithm: response.algorithm || 'Merkle-SHA256',
         status: response.status || (response.passed === false ? 'FAIL' : 'PASS'),
@@ -391,18 +449,20 @@ export default {
             ? response.sampleIndex
             : detail.sampleIndex != null ? detail.sampleIndex : payload.sampleIndex
         }),
-        ledger: this.normalizeLedger(response.ledger),
+        ledger: this.normalizeLedger(response.ledger, payload.sourceChain),
         ledgerStatus: this.resolveLedgerStatus(response)
       })
     },
-    normalizeLedger(ledger) {
+    normalizeLedger(ledger, sourceChain) {
+      const chain = sourceChain || this.form.sourceChain
       return Object.assign({
         enabled: true,
         status: 'PENDING',
-        chainPath: 'payment.bcos3',
-        resourcePath: BCOS3_VERIFY_PATH,
+        sourceChain: chain,
+        chainPath: getVerifyChainPath(chain),
+        resourcePath: getVerifyPath(chain),
         txHash: '',
-        message: '等待同步至 bcos3 可信账本'
+        message: `等待同步至 ${getVerifyChainLabel(chain)} 可信账本`
       }, ledger || {})
     },
     resolveLedgerStatus(response) {
@@ -423,71 +483,94 @@ export default {
       }
     },
     async syncMerkleLedger(result) {
+      const sourceChain = this.form.sourceChain
+      const verificationChain = this.form.verificationChain
+      const sourceLabel = getVerifyChainLabel(sourceChain)
+      const verificationLabel = getVerifyChainLabel(verificationChain)
+      const sourcePath = getVerifyPath(sourceChain)
+      const verificationPath = getVerifyPath(verificationChain)
       const record = this.buildMerkleLedgerRecord(result)
       let current = this.withLedgerState(result, {
+        enabled: true,
         status: 'PENDING',
-        message: '正在提交至 bcos3 可信账本',
-        resourcePath: BCOS3_VERIFY_PATH
+        sourceChain,
+        chainPath: getVerifyChainPath(sourceChain),
+        message: `正在提交至 ${sourceLabel} 可信账本`,
+        resourcePath: sourcePath
       }, {
         status: 'PENDING',
-        message: '等待 bcos3 同步完成后发起 fabric 验证',
-        resourcePath: FABRIC_VERIFY_PATH
+        sourceChain,
+        verificationChain,
+        message: `等待 ${sourceLabel} 同步完成后发起 ${verificationLabel} 验证`,
+        resourcePath: verificationPath
       })
       this.result = current
 
       try {
-        const txResult = await writeVerifyRecord(TARGET_CHAIN, record.businessId, VERIFY_TYPES.MERKLE, record)
-        this.assertTxSuccess(txResult, 'bcos3 可信账本同步')
+        const txResult = await writeVerifyRecord(sourceChain, record.businessId, VERIFY_TYPES.MERKLE, record)
+        this.assertTxSuccess(txResult, `${sourceLabel} 可信账本同步`)
+        await this.waitVerifyRecordAvailable(sourceChain, record.businessId, VERIFY_TYPES.MERKLE)
         current = this.withLedgerState(current, {
+          enabled: true,
           status: 'SUCCESS',
+          sourceChain,
+          chainPath: getVerifyChainPath(sourceChain),
           txHash: txResult.txhash,
-          message: '已同步至 bcos3 可信账本',
-          resourcePath: BCOS3_VERIFY_PATH
+          message: `已同步至 ${sourceLabel} 可信账本`,
+          resourcePath: sourcePath
         }, {
           status: 'PENDING',
-          message: '正在通过 fabric 发起验证',
-          resourcePath: FABRIC_VERIFY_PATH
+          sourceChain,
+          verificationChain,
+          message: `正在通过 ${verificationLabel} 发起验证`,
+          resourcePath: verificationPath
         })
         this.result = current
 
-        await this.waitVerifyRecordAvailable(TARGET_CHAIN, record.businessId, VERIFY_TYPES.MERKLE)
         const crossTxResult = await interchainQueryRecord(
-          VERIFY_FROM_CHAIN,
-          TARGET_CHAIN,
+          verificationChain,
+          sourceChain,
           record.businessId,
           VERIFY_TYPES.MERKLE
         )
-        this.assertTxSuccess(crossTxResult, 'fabric 验证')
-        const callbackResult = await waitLastCallbackResult(VERIFY_FROM_CHAIN, {
+        this.assertTxSuccess(crossTxResult, `${verificationLabel} 验证`)
+        const callbackResult = await waitLastCallbackResult(verificationChain, {
           recordKey: buildRecordKey(record.businessId, VERIFY_TYPES.MERKLE)
         })
         if (!callbackResult.exists) {
-          throw new Error('fabric 未查询到 bcos3 验证记录')
+          throw new Error(`${verificationLabel} 未查询到 ${sourceLabel} 验证记录`)
         }
 
         return this.withLedgerState(current, {
+          enabled: true,
           status: 'SUCCESS',
+          sourceChain,
+          chainPath: getVerifyChainPath(sourceChain),
           txHash: txResult.txhash,
-          message: '已同步至 bcos3 可信账本',
-          resourcePath: BCOS3_VERIFY_PATH
+          message: `已同步至 ${sourceLabel} 可信账本`,
+          resourcePath: sourcePath
         }, {
           status: 'SUCCESS',
+          sourceChain,
+          verificationChain,
           txHash: crossTxResult.txhash,
-          message: '已通过 fabric 完成验证',
-          resourcePath: FABRIC_VERIFY_PATH,
+          message: `已通过 ${verificationLabel} 完成验证`,
+          resourcePath: verificationPath,
           recordKey: callbackResult.recordKey,
           record: callbackResult.record
         })
       } catch (error) {
-        const message = this.getErrorMessage(error, '可信账本同步或 fabric 验证失败')
+        const message = this.getErrorMessage(error, `可信账本同步或 ${verificationLabel} 验证失败`)
         const ledger = current.ledger || {}
         const ledgerPatch = ledger.status === 'SUCCESS'
           ? { message: ledger.message }
-          : { status: 'FAILED', message, resourcePath: BCOS3_VERIFY_PATH }
+          : { status: 'FAILED', sourceChain, chainPath: getVerifyChainPath(sourceChain), message, resourcePath: sourcePath }
         return this.withLedgerState(current, ledgerPatch, {
           status: 'FAILED',
+          sourceChain,
+          verificationChain,
           message,
-          resourcePath: FABRIC_VERIFY_PATH
+          resourcePath: verificationPath
         })
       }
     },
@@ -497,7 +580,9 @@ export default {
         businessId: result.businessId,
         verifyType: VERIFY_TYPES.MERKLE,
         recordId: result.recordId,
-        chain: TARGET_CHAIN,
+        chain: this.form.sourceChain,
+        sourceChain: this.form.sourceChain,
+        verificationChain: this.form.verificationChain,
         algorithm: result.algorithm,
         createdAt: result.timestamp ? new Date(result.timestamp).toISOString() : new Date().toISOString(),
         status: result.status,
@@ -538,7 +623,7 @@ export default {
       })
     },
     assertTxSuccess(result, title) {
-      if (result && result.success && result.txhash) return
+      if (result && result.success) return
       const error = new Error(title + '失败')
       error.result = result
       throw error
@@ -556,38 +641,40 @@ export default {
       const ledger = result && result.ledger ? result.ledger : {}
       const chainVerification = result && result.chainVerification ? result.chainVerification : {}
       if (status === 'ERROR') {
-        this.$message.error(result.message || 'Merkle验证异常')
+        this.$message.error(result.message || '数据完整性验证异常')
         return
       }
       if (status === 'FAIL') {
-        this.$message.warning(result.message || 'Merkle验证未通过')
+        this.$message.warning(result.message || '数据完整性验证未通过')
         return
       }
       if (ledger.status === 'SUCCESS' && chainVerification.status === 'SUCCESS') {
-        this.$message.success('Merkle验证完成，可信账本同步成功')
+        this.$message.success('数据完整性验证完成，可信账本同步成功')
         return
       }
       if (ledger.status === 'FAILED' || chainVerification.status === 'FAILED') {
-        this.$message.warning((chainVerification.message || ledger.message) || 'Merkle验证通过，但可信账本同步未完成')
+        this.$message.warning((chainVerification.message || ledger.message) || '数据完整性验证通过，但可信账本同步未完成')
         return
       }
-      this.$message.success('Merkle验证完成')
+      this.$message.success('数据完整性验证完成')
     },
     buildErrorResult(error, payload) {
       return {
         recordId: `local-error-${Date.now()}`,
         verifyType: VERIFY_TYPES.MERKLE,
-        verifyName: 'Merkle验证',
+        verifyName: '数据完整性验证',
         businessId: payload.businessId,
         algorithm: 'Merkle-SHA256',
         status: 'ERROR',
-        message: 'Merkle验证请求失败，请检查验证服务状态。',
+        message: '数据完整性验证请求失败，请检查验证服务状态。',
         resultHash: '',
         ledgerStatus: 'FAILED',
         ledger: {
           enabled: true,
           status: 'FAILED',
-          resourcePath: BCOS3_VERIFY_PATH,
+          sourceChain: payload.sourceChain,
+          chainPath: getVerifyChainPath(payload.sourceChain),
+          resourcePath: getVerifyPath(payload.sourceChain),
           message: error && error.message
         },
         detail: {

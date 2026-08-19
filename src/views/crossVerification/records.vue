@@ -22,9 +22,9 @@
               <el-form-item label="验证方式">
                 <el-select v-model="filters.verifyType" placeholder="全部" clearable style="width: 100%">
                   <el-option label="全部" value="" />
-                  <el-option label="Merkle验证" value="MERKLE" />
-                  <el-option label="ZKP验证" value="ZKP" />
-                  <el-option label="门限阈值签名" value="THRESHOLD_SIGNATURE" />
+                  <el-option label="数据完整性验证" value="MERKLE" />
+                  <el-option label="隐私证明验证" value="ZKP" />
+                  <el-option label="多方签名验证" value="THRESHOLD_SIGNATURE" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -112,17 +112,21 @@
             <template slot-scope="{ row }">
               <div class="chain-cell">
                 <div>
-                  <span>网络</span>
-                  <em>{{ row.chainPath || getChainPath(row.resourcePath) || '-' }}</em>
+                  <span>写入链</span>
+                  <em>{{ getSourceChainLabel(row) }}</em>
                 </div>
                 <div>
-                  <span>账本</span>
-                  <el-tooltip :content="row.txHash || '-'" placement="top" effect="light">
-                    <code>{{ row.txHash || '-' }}</code>
+                  <span>写入交易</span>
+                  <el-tooltip :content="getTxHash(row)" placement="top" effect="light">
+                    <code>{{ getTxHash(row) }}</code>
                   </el-tooltip>
                 </div>
                 <div>
-                  <span>Fabric</span>
+                  <span>验证链</span>
+                  <em>{{ getVerificationChainLabel(row) }}</em>
+                </div>
+                <div>
+                  <span>验证交易</span>
                   <el-tooltip :content="getCrossChainTxHash(row)" placement="top" effect="light">
                     <code>{{ getCrossChainTxHash(row) }}</code>
                   </el-tooltip>
@@ -247,17 +251,15 @@ export default {
         { label: '验证状态', tag: this.verifyStatusMeta(record.status) },
         { label: '结果 Hash', value: record.resultHash, tooltip: true, wide: true },
         { label: '可信账本状态', tag: this.ledgerStatusMeta(this.getLedgerStatus(record)) },
-        { label: '交易哈希', value: this.getTxHash(record), tooltip: true, wide: true },
+        { label: '数据写入链', value: this.getSourceChainLabel(record) },
+        { label: '写入交易哈希', value: this.getTxHash(record), tooltip: true, wide: true },
+        { label: '数据验证链', value: this.getVerificationChainLabel(record) },
+        { label: '验证交易哈希', value: this.getCrossChainTxHash(record), tooltip: true, wide: true },
         { label: '创建时间', value: this.formatTime(record.createdAt || record.timestamp) }
       ]
     },
     formattedDetailJson() {
-      if (!this.detailRecord) return ''
-      const displayRecord = { ...this.detailRecord }
-      if (displayRecord.verifyName) {
-        displayRecord.verifyName = this.formatVerifyType(displayRecord.verifyType, displayRecord.verifyName)
-      }
-      return JSON.stringify(displayRecord, null, 2)
+      return this.detailRecord ? JSON.stringify(this.detailRecord, null, 2) : ''
     }
   },
   created() {
@@ -416,11 +418,11 @@ export default {
     },
     formatVerifyType(type, name) {
       const typeMap = {
-        MERKLE: 'Merkle验证',
-        ZKP: 'ZKP验证',
-        THRESHOLD_SIGNATURE: '门限阈值签名'
+        MERKLE: '数据完整性验证',
+        ZKP: '隐私证明验证',
+        THRESHOLD_SIGNATURE: '多方签名验证'
       }
-      return typeMap[type] || name || type || '-'
+      return name || typeMap[type] || type || '-'
     },
     verifyStatusMeta(status) {
       const statusMap = {
@@ -455,7 +457,66 @@ export default {
     },
     getCrossChainTxHash(record) {
       const chain = record && record.chainVerification
-      return record.crossChainTxHash || (chain && chain.txHash) || '-'
+      return record.crossChainTxHash || (chain && (
+        chain.txHash ||
+        chain.txhash ||
+        chain.txid ||
+        chain.transactionHash ||
+        chain.txId ||
+        chain.txID ||
+        chain.transactionId ||
+        chain.transactionID
+      )) || '-'
+    },
+    getSourceChainLabel(record) {
+      const ledger = record && record.ledger
+      const detail = record && record.detail
+      const values = [
+        record && record.sourceChain,
+        ledger && ledger.sourceChainLabel,
+        ledger && ledger.sourceChain,
+        detail && detail.sourceChain,
+        record && record.chainPath,
+        record && record.resourcePath,
+        ledger && ledger.chainPath,
+        ledger && ledger.resourcePath
+      ]
+      return this.firstChainLabel(values, '未标记')
+    },
+    getVerificationChainLabel(record) {
+      const chain = record && record.chainVerification
+      const detail = record && record.detail
+      const detailChain = detail && detail.chainVerification
+      const values = [
+        record && record.verificationChain,
+        chain && chain.verificationChainLabel,
+        chain && chain.verificationChain,
+        detail && detail.verificationChain,
+        detailChain && detailChain.verificationChainLabel,
+        detailChain && detailChain.verificationChain,
+        chain && chain.resourcePath,
+        detailChain && detailChain.resourcePath
+      ]
+      return this.firstChainLabel(values, '验证链')
+    },
+    firstChainLabel(values, fallback) {
+      for (const value of values) {
+        const label = this.formatChainLabel(value, '')
+        if (label) return label
+      }
+      return fallback
+    },
+    formatChainLabel(value, fallback) {
+      const raw = String(value || '').trim()
+      const text = raw.toLowerCase()
+      if (!raw || this.looksLikeTransactionId(raw)) return fallback
+      if (text.includes('bcos3')) return 'FISCO BCOS 3.0'
+      if (text.includes('fabric')) return 'Fabric 1.4'
+      if (text.includes('chainmaker')) return 'ChainMaker'
+      return raw || fallback
+    },
+    looksLikeTransactionId(value) {
+      return /^(0x)?[0-9a-f]{32,128}$/i.test(String(value || '').trim())
     },
     getLedgerStatus(record) {
       const ledger = record && record.ledger
@@ -463,7 +524,16 @@ export default {
     },
     getTxHash(record) {
       const ledger = record && record.ledger
-      return record.txHash || (ledger && ledger.txHash) || '-'
+      return record.txHash || (ledger && (
+        ledger.txHash ||
+        ledger.txhash ||
+        ledger.txid ||
+        ledger.transactionHash ||
+        ledger.txId ||
+        ledger.txID ||
+        ledger.transactionId ||
+        ledger.transactionID
+      )) || '-'
     },
     getChainPath(resourcePath) {
       const value = String(resourcePath || '')
@@ -582,7 +652,7 @@ export default {
 }
 .chain-cell div {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: 60px minmax(0, 1fr);
   align-items: center;
   min-width: 0;
   column-gap: 8px;
@@ -590,6 +660,7 @@ export default {
 .chain-cell span {
   color: #909399;
   font-size: 12px;
+  white-space: nowrap;
 }
 .chain-cell em,
 .chain-cell code {

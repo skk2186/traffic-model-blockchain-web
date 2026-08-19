@@ -3,7 +3,7 @@
     <el-card class="page-shell cross-verification-card">
       <header class="page-header cross-verification-header">
         <div>
-          <h2>ZKP验证</h2>
+          <h2>隐私证明验证</h2>
           <p>验证交通数据相关证明是否满足指定约束</p>
         </div>
         <el-tag :type="healthMeta.type" effect="plain">{{ healthMeta.text }}</el-tag>
@@ -30,6 +30,34 @@
                   <el-button slot="append" @click="generateBusinessId">生成</el-button>
                 </el-input>
               </el-form-item>
+
+              <el-row :gutter="12">
+                <el-col :xs="24" :sm="12">
+                  <el-form-item label="证明写入链" prop="sourceChain">
+                    <el-select v-model="form.sourceChain" style="width: 100%" @change="handleSourceChainChange">
+                      <el-option
+                        v-for="chain in chainOptions"
+                        :key="chain.value"
+                        :label="chain.label"
+                        :value="chain.value"
+                      />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :xs="24" :sm="12">
+                  <el-form-item label="证明验证链" prop="verificationChain">
+                    <el-select v-model="form.verificationChain" style="width: 100%">
+                      <el-option
+                        v-for="chain in chainOptions"
+                        :key="chain.value"
+                        :label="chain.label"
+                        :value="chain.value"
+                        :disabled="chain.value === form.sourceChain"
+                      />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
 
               <el-form-item label="零知识证明规则" prop="circuitId">
                 <el-input
@@ -224,7 +252,7 @@ import { getCrossVerificationHealth, updateVerificationRecordLedger, verifyZkp }
 import JsonResultDialog from './components/JsonResultDialog'
 import VerificationResultPanel from './components/VerificationResultPanel'
 import { formatBytes } from './utils/fileChunkUtils'
-import { VERIFY_TYPES } from '@/api/trafficVerifyChain'
+import { VERIFY_CHAINS, VERIFY_TYPES, getVerifyChainPath, getVerifyPath } from '@/api/trafficVerifyChain'
 import { syncCrossChainVerification } from './utils/crossChainVerification'
 import { isHex64 } from './utils/verificationUtils'
 
@@ -311,6 +339,20 @@ export default {
       form: this.createForm(),
       rules: {
         businessId: [{ required: true, message: '请输入业务标识', trigger: 'blur' }],
+        sourceChain: [{ required: true, message: '请选择证明写入链', trigger: 'change' }],
+        verificationChain: [
+          { required: true, message: '请选择证明验证链', trigger: 'change' },
+          {
+            validator: (rule, value, callback) => {
+              if (value && value === this.form.sourceChain) {
+                callback(new Error('证明写入链和证明验证链不能相同'))
+                return
+              }
+              callback()
+            },
+            trigger: 'change'
+          }
+        ],
         circuitId: [{ required: true, message: '请输入零知识证明规则', trigger: 'blur' }],
         proofText: [{ validator: validateProofText, trigger: 'blur' }],
         publicSignalsText: [{ validator: validatePublicSignals, trigger: 'blur' }],
@@ -324,7 +366,8 @@ export default {
       submitError: '',
       result: null,
       jsonDialogVisible: false,
-      jsonDialogData: null
+      jsonDialogData: null,
+      chainOptions: VERIFY_CHAINS
     }
   },
   computed: {
@@ -344,6 +387,8 @@ export default {
     createForm() {
       return {
         businessId: '',
+        sourceChain: 'bcos3',
+        verificationChain: 'fabric',
         algorithm: 'Groth16',
         circuitId: '',
         proofInputMode: 'paste',
@@ -356,6 +401,13 @@ export default {
     generateBusinessId() {
       this.form.businessId = `traffic-proof-${Date.now()}`
       this.$nextTick(() => this.$refs.form.validateField('businessId'))
+    },
+    handleSourceChainChange(sourceChain) {
+      if (this.form.verificationChain === sourceChain) {
+        const fallback = this.chainOptions.find(chain => chain.value !== sourceChain)
+        this.form.verificationChain = fallback ? fallback.value : ''
+      }
+      this.$nextTick(() => this.$refs.form.validateField('verificationChain'))
     },
     generateZkpRule() {
       this.form.circuitId = 'traffic-speed-range-v1'
@@ -501,7 +553,10 @@ export default {
           let nextResult = this.normalizeResult(response, payload)
           this.result = nextResult
           if (nextResult.status === 'PASS') {
-            nextResult = await syncCrossChainVerification(nextResult, VERIFY_TYPES.ZKP, current => {
+            nextResult = await syncCrossChainVerification(nextResult, VERIFY_TYPES.ZKP, {
+              sourceChain: this.form.sourceChain,
+              verificationChain: this.form.verificationChain
+            }, current => {
               this.result = current
             })
             this.result = nextResult
@@ -510,7 +565,7 @@ export default {
           this.showSubmitMessage(this.result)
         } catch (error) {
           this.result = this.buildErrorResult(error, payload)
-          this.submitError = 'ZKP验证请求失败，请检查验证服务状态。'
+          this.submitError = '隐私证明验证请求失败，请检查验证服务状态。'
           this.$message.error(this.submitError)
         } finally {
           this.submitting = false
@@ -540,6 +595,8 @@ export default {
       this.inputError = ''
       return {
         businessId: this.form.businessId,
+        sourceChain: this.form.sourceChain,
+        verificationChain: this.form.verificationChain,
         circuitId: this.form.circuitId,
         proof: proof.value,
         publicSignals: publicSignals.value,
@@ -564,7 +621,7 @@ export default {
       const proofSummary = Object.assign({}, detail.proofSummary || {})
       return Object.assign({}, response, {
         verifyType: response.verifyType || 'ZKP',
-        verifyName: response.verifyName || 'ZKP验证',
+        verifyName: response.verifyName || '隐私证明验证',
         businessId: response.businessId || payload.businessId,
         algorithm: response.algorithm || this.form.algorithm,
         status: response.status || (response.passed === false ? 'FAIL' : 'PASS'),
@@ -586,37 +643,53 @@ export default {
     },
     showSubmitMessage(result) {
       if (result.status === 'ERROR') {
-        this.$message.error(result.message || 'ZKP验证异常')
+        this.$message.error(result.message || '隐私证明验证异常')
         return
       }
       if (result.status === 'FAIL') {
-        this.$message.warning(result.message || 'ZKP验证未通过')
+        this.$message.warning(result.message || '隐私证明验证未通过')
         return
       }
       const ledger = result.ledger || {}
       const chain = result.chainVerification || {}
       if (ledger.status === 'SUCCESS' && chain.status === 'SUCCESS') {
-        this.$message.success('ZKP验证完成，可信账本同步和 Fabric 跨链验证成功')
+        this.$message.success('隐私证明验证完成，可信账本同步和 Fabric 跨链验证成功')
         return
       }
       if (ledger.status === 'FAILED' || chain.status === 'FAILED') {
-        this.$message.warning(chain.message || ledger.message || 'ZKP验证通过，但跨链同步未完成')
+        this.$message.warning(chain.message || ledger.message || '隐私证明验证通过，但跨链同步未完成')
         return
       }
-      this.$message.success('ZKP验证完成')
+      this.$message.success('隐私证明验证完成')
     },
     buildErrorResult(error, payload) {
       return {
         recordId: `local-error-${Date.now()}`,
         verifyType: 'ZKP',
-        verifyName: 'ZKP验证',
+        verifyName: '隐私证明验证',
         businessId: payload && payload.businessId,
         algorithm: this.form.algorithm,
         status: 'ERROR',
-        message: 'ZKP验证请求失败，请检查验证服务状态。',
+        message: '隐私证明验证请求失败，请检查验证服务状态。',
         proofHash: '',
         resultHash: '',
         ledgerStatus: 'LEDGER_FAILED',
+        ledger: {
+          enabled: true,
+          status: 'FAILED',
+          sourceChain: payload && payload.sourceChain,
+          chainPath: payload && payload.sourceChain ? getVerifyChainPath(payload.sourceChain) : '',
+          resourcePath: payload && payload.sourceChain ? getVerifyPath(payload.sourceChain) : '',
+          message: error && error.message
+        },
+        chainVerification: {
+          enabled: true,
+          status: 'FAILED',
+          sourceChain: payload && payload.sourceChain,
+          verificationChain: payload && payload.verificationChain,
+          resourcePath: payload && payload.verificationChain ? getVerifyPath(payload.verificationChain) : '',
+          message: error && error.message
+        },
         detail: {
           circuitId: payload && payload.circuitId,
           error: error && error.message
